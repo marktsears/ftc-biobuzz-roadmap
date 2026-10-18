@@ -1,0 +1,2099 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BIOBUZZ Rails · Trinity Robotics · FTC 2026–27</title>
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ============================================================
+   BIOBUZZ Rails — one page for the whole team.
+   Layout: pizza-tracker hero → rails check + heads-up → this week's
+   plan (4 tracks) → robot snapshot → season outline → cheat sheets.
+   ============================================================ */
+:root{
+  color-scheme:light dark;
+  --bg:#F2F4F8; --surface:#FFFFFF; --surface-2:#E8ECF3; --ink:#15203B; --ink-2:#4A5672; --line:#D5DBE6;
+  --honey:#C98A0B; --honey-soft:#FCEFCF; --honey-ink:#6E4A00;
+  --p-sprint:#64759F; --p-bring:#2F6DB3; --p-aim:#A86F00; --p-scrim:#7A5BC4; --p-break:#B9C1D0; --p-qual:#C2463A; --p-post:#2F9A7A;
+  --t-B:#B45F1E; --t-S:#2F6DB3; --t-D:#18774E; --t-O:#6D4DB8; --t-A:#5A6A8F;
+  --good:#1F8A5B; --warn:#B7791F; --bad:#C2463A; --on-phase:#FFFFFF;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",Arial,sans-serif;
+  --f-mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+  --hex:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0E1424; --surface:#161F35; --surface-2:#1E2943; --ink:#E8ECF5; --ink-2:#A9B3C9; --line:#2C3754;
+  --honey:#F2B53C; --honey-soft:#3A2E12; --honey-ink:#F8D891;
+  --p-sprint:#8D9CC2; --p-bring:#5D97D8; --p-aim:#F2B53C; --p-scrim:#9C80E0; --p-break:#3A4560; --p-qual:#E26A5D; --p-post:#4FC09C;
+  --t-B:#EE9A55; --t-S:#5D97D8; --t-D:#4CC28B; --t-O:#A98BEB; --t-A:#8D9CC2;
+  --good:#4CC28B; --warn:#F2B53C; --bad:#E26A5D; --on-phase:#0E1424;
+}}
+*{box-sizing:border-box}
+html{scroll-padding-top:120px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+a{color:var(--honey-ink)}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+p{margin:0}
+button{font:inherit;cursor:pointer;color:inherit}
+input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--honey);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.label{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+.note{font-size:15px;color:var(--ink-2)}
+.note b{color:var(--ink)}
+.hex{clip-path:var(--hex)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.card h3{font-size:18px;margin-bottom:8px}
+.card ul{margin:0;padding-left:18px;display:grid;gap:5px;color:var(--ink-2);font-size:15px}
+.card li b,.card p b{color:var(--ink)}
+.pill{font-family:var(--f-mono);font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.pill.full{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.pill.late{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:10px;font-size:14px;font-weight:700}
+.btn:hover{border-color:var(--honey)}
+.btn.sm{padding:4px 10px;font-size:13px;border-radius:8px}
+.learn{display:flex;flex-wrap:wrap;gap:8px}
+.learn a{display:inline-flex;align-items:center;gap:6px;font-size:14px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--surface)}
+.learn a:hover{border-color:var(--honey)}
+.learn a::after{content:"↗";color:var(--ink-2);font-size:12px}
+
+/* ---------- Top bar ---------- */
+.bar{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding-block:9px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:18px;white-space:nowrap}
+.brand .hex{width:22px;height:25px;background:var(--honey)}
+.brand small{font-weight:700;color:var(--ink-2);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.seg{display:flex;gap:3px;background:var(--surface-2);padding:3px;border-radius:999px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:var(--ink-2);padding:5px 12px;border-radius:999px;font-weight:700;font-size:13.5px;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg-wrap{display:flex;align-items:center;gap:8px}
+.seg-wrap .label{font-size:11px}
+.overall{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2)}
+.meter{width:110px;height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--good);width:0;transition:width .3s}
+.preview{background:var(--honey-soft);color:var(--honey-ink);border-bottom:1px solid color-mix(in srgb,var(--honey) 40%,transparent);font-size:14px}
+.preview .wrap{padding-block:6px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+
+/* ---------- Hero + pizza tracker ---------- */
+.hero{padding-block:30px 8px}
+.hero-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px 32px;align-items:flex-end}
+.hero h1{font-weight:800;line-height:.95;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:6px}
+.hero h1 .wk{font-size:clamp(22px,4vw,34px);letter-spacing:.02em;color:var(--ink-2);text-transform:uppercase}
+.hero h1 .big{font-size:clamp(76px,15vw,148px);color:var(--honey);letter-spacing:-.03em}
+.hero h1 .of{font-size:clamp(22px,4vw,34px);color:var(--ink-2);font-family:var(--f-mono);font-weight:400}
+.hero .sub{margin-top:10px;font-size:18px;color:var(--ink-2);max-width:60ch}
+.hero .sub b{color:var(--ink)}
+.hero-side{text-align:right;min-width:230px}
+.hero-side .num{font-family:var(--f-display);font-weight:800;font-size:clamp(40px,7vw,64px);line-height:1;color:var(--p-qual)}
+.hero-side .num small{font-size:.4em;color:var(--ink-2);font-weight:700;margin-left:4px}
+.hero-side .bar2{height:8px;background:var(--surface-2);border-radius:99px;margin-top:10px;overflow:hidden}
+.hero-side .bar2 i{display:block;height:100%;background:var(--p-qual);border-radius:99px}
+.hero-side .note{margin-top:6px;font-size:13.5px}
+
+.tracker{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 16px 12px}
+.tr-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tr-scroll{overflow-x:auto;padding:4px 0 6px;scrollbar-width:thin}
+.tr-inner{min-width:var(--min,900px);padding-inline:34px}
+.tr-row{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:0}
+.stage{padding-inline:3px;min-width:0}
+.stage i{display:block;height:8px;border-radius:99px;background:var(--c);opacity:.28}
+.stage.done i,.stage.now i{opacity:1}
+.stage .sn{font-family:var(--f-display);font-weight:800;font-size:13px;margin-top:6px;line-height:1.15}
+.stage .ss{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2)}
+.stage.now .sn{color:var(--ink)}
+.stage.next .sn{color:var(--ink-2)}
+.tr-rail{position:relative;height:84px;margin-top:12px}
+.tr-rail::before{content:"";position:absolute;left:0;right:0;top:59px;height:8px;margin-top:-4px;background:var(--surface-2);border-radius:99px}
+.tr-fill{position:absolute;left:0;top:59px;height:8px;margin-top:-4px;background:linear-gradient(90deg,var(--p-sprint),var(--honey));border-radius:99px;width:var(--p,0%)}
+.tr-cells{position:absolute;inset:0;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr))}
+.nw{position:relative;display:grid;place-items:center;padding-top:34px;height:84px}
+.nw .ring{position:absolute;top:34px;left:50%;width:46px;height:51px;margin-left:-23px;background:var(--honey);clip-path:var(--hex);opacity:.45}
+.node{position:relative;border:0;padding:0;width:36px;height:40px;clip-path:var(--hex);background:color-mix(in srgb,var(--c) 22%,var(--surface));color:var(--ink-2);font-family:var(--f-mono);font-weight:600;font-size:13px;display:grid;place-items:center}
+.node.past,.node.now{background:var(--c);color:var(--on-phase)}
+.node.brk{width:calc(100% - 10px);max-width:120px;height:28px;clip-path:none;border-radius:9px}
+.node.brk.past,.node.brk.now{color:var(--ink)}
+.node:hover{filter:brightness(1.08)}
+.node[aria-current="step"]{outline:none}
+.node.sel::before{content:"";position:absolute;inset:auto 7px 3px;height:3px;border-radius:2px;background:var(--on-phase)}
+.node.past:not(.sel)::before,.node.now:not(.sel)::before{content:none}
+.node.full::after{content:"✓";position:absolute;top:-1px;right:-1px;font-size:10px;line-height:1;background:var(--good);color:#fff;width:14px;height:14px;border-radius:50%;display:grid;place-items:center;clip-path:none}
+.node.late::after{content:"!";position:absolute;top:-1px;right:-1px;font-size:10px;font-weight:800;line-height:1;background:var(--bad);color:#fff;width:14px;height:14px;border-radius:50%;display:grid;place-items:center;clip-path:none}
+.pin{position:absolute;top:0;left:var(--p,0%);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none;z-index:3}
+.pin b{font-family:var(--f-display);font-weight:800;font-size:10.5px;letter-spacing:.1em;background:var(--ink);color:var(--surface);padding:2px 8px;border-radius:6px;white-space:nowrap}
+.pin::after{content:"";width:2px;height:20px;background:var(--ink)}
+.tr-dates .d{font-family:var(--f-mono);font-size:11px;color:var(--ink-2);text-align:center;white-space:nowrap}
+.tr-flags .f{display:flex;justify-content:center;min-height:22px;padding-top:3px}
+.flag{font-family:var(--f-display);font-weight:800;font-size:9.5px;letter-spacing:.07em;color:#fff;background:var(--p-qual);padding:1px 6px;border-radius:6px;white-space:nowrap}
+.flag.robot{background:var(--p-bring)} .flag.scrim{background:var(--p-scrim)} .flag.gate{background:var(--p-aim)}
+.tr-stages{margin-top:6px}
+
+.miles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
+.mile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:left;display:grid;gap:2px;min-width:0}
+.mile:hover{border-color:var(--honey)}
+.mile.next{border-color:var(--honey);box-shadow:0 0 0 2px color-mix(in srgb,var(--honey) 35%,transparent)}
+.mile .mn{font-family:var(--f-display);font-weight:800;font-size:14px}
+.mile .md{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.mile .mc{font-family:var(--f-display);font-weight:800;font-size:22px;line-height:1.1}
+.mile .mc small{font-size:12px;color:var(--ink-2);font-weight:700;margin-left:3px}
+.mile.past .mc{color:var(--good)}
+.mile .mg{font-size:12.5px;color:var(--ink-2)}
+.mile .mgb{height:5px;background:var(--surface-2);border-radius:9px;overflow:hidden;margin-top:3px}
+.mile .mgb i{display:block;height:100%;background:var(--good)}
+
+/* ---------- Rails check + heads-up ---------- */
+.dash{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-top:18px}
+.rails{border-left:8px solid var(--sc,var(--good));display:grid;gap:10px;align-content:start}
+.rails.drift{--sc:var(--warn)} .rails.off{--sc:var(--bad)} .rails.pre{--sc:var(--p-bring)}
+.rails .st{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rails .st h2{font-size:24px}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--sc,var(--good));flex:none}
+.rails .st .tag{font-size:12px}
+.nextgate{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:14.5px;display:grid;gap:6px}
+.nextgate .ngr{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.nextgate .gb{height:7px;background:var(--surface);border-radius:9px;overflow:hidden}
+.nextgate .gb i{display:block;height:100%;background:var(--honey)}
+.carry{display:grid;gap:2px}
+.carry .wkb{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:0 6px;margin-right:6px;color:var(--bad)}
+.ladder{border:1px dashed var(--line);border-radius:10px;padding:8px 12px;font-size:14.5px}
+.ladder summary{cursor:pointer;font-weight:700;font-family:var(--f-display);list-style:none}
+.ladder summary::-webkit-details-marker{display:none}
+.ladder summary::before{content:"▸ ";color:var(--ink-2)}
+.ladder[open] summary::before{content:"▾ "}
+.ladder ol{margin:8px 0 0;padding-left:20px;display:grid;gap:5px;color:var(--ink-2)}
+.ladder ol b{color:var(--ink)}
+.heads h3{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.hl{display:grid;gap:4px;margin-top:6px}
+.hl .over{color:var(--bad)}
+.wkb2{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);margin-left:6px;white-space:nowrap}
+
+/* ---------- Checklists ---------- */
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:15.5px;line-height:1.45;cursor:pointer;padding:3px 0;color:var(--ink)}
+.chk input{width:19px;height:19px;margin-top:2px;accent-color:var(--tc,var(--good));flex:none}
+.chk input:checked + span{color:var(--ink-2);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--ink-2) 50%,transparent)}
+.tt{font-style:normal;font-family:var(--f-display);font-weight:800;font-size:10.5px;letter-spacing:.07em;padding:1px 6px;border-radius:5px;margin-left:7px;background:var(--honey-soft);color:var(--honey-ink);vertical-align:1px;white-space:nowrap}
+.trtag{font-family:var(--f-display);font-weight:800;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:5px;margin-right:7px;background:color-mix(in srgb,var(--tc) 16%,transparent);color:var(--tc);white-space:nowrap}
+.plain{margin:0;padding-left:18px;display:grid;gap:5px;font-size:15px;color:var(--ink-2)}
+
+/* ---------- Week view ---------- */
+.wv{margin-top:36px}
+.wv-nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:14px}
+.wv-nav .pos{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-right:auto}
+.wv-nav select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 10px;font-size:14px;max-width:100%}
+.tag{display:inline-block;font-family:var(--f-display);font-weight:800;font-size:11px;letter-spacing:.09em;text-transform:uppercase;padding:2px 9px;border-radius:7px;background:var(--surface-2);color:var(--ink-2)}
+.tag.now{background:var(--honey);color:#1B1400}
+.tag.past{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.tag.ahead{background:var(--surface-2)}
+.wv-head{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--c);border-radius:16px;padding:20px 22px}
+.wv-head .big{width:78px;height:86px;background:var(--c);clip-path:var(--hex);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:38px;color:var(--on-phase)}
+.wv-head.brk .big{color:var(--ink)}
+.wv-head h2{font-size:clamp(24px,3.6vw,34px);font-weight:800;margin:3px 0 6px}
+.wv-head .goal{font-size:17px;color:var(--ink-2);max-width:70ch}
+.why{margin-top:12px;font-size:16px;padding:0 4px}
+.why b{font-family:var(--f-display)}
+.event{margin-top:12px;background:color-mix(in srgb,var(--p-qual) 12%,transparent);border-radius:10px;padding:10px 14px;font-size:15px}
+.event b{color:var(--p-qual)}
+.tracks{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;margin-top:16px}
+.trk{grid-column:span 6;background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--tc);border-radius:14px;overflow:hidden}
+.trk.wide{grid-column:1/-1}
+.trk.dim{opacity:.72}
+.trk>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 16px}
+.trk>summary::-webkit-details-marker{display:none}
+.trk>summary h3{font-size:18px;color:var(--ink)}
+.trk>summary h3 small{font-family:var(--f-body);font-weight:400;color:var(--ink-2);font-size:13.5px;margin-left:6px}
+.trk>summary .pill{margin-left:auto}
+.trk>summary::after{content:"▾";color:var(--ink-2);margin-left:4px}
+.trk:not([open])>summary::after{content:"▸"}
+.trk .tb{padding:0 16px 14px;display:grid;gap:10px}
+.lanes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.box{background:var(--surface-2);border-radius:12px;padding:12px 14px;min-width:0}
+.box h4{margin:0 0 6px}
+.lane-chip{display:inline-block;font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:6px}
+.chip-motion{background:color-mix(in srgb,var(--t-S) 18%,transparent);color:var(--t-S)}
+.chip-scoring{background:var(--honey-soft);color:var(--honey-ink)}
+.chip-both{background:var(--surface);color:var(--ink-2)}
+.empty{font-size:14.5px;color:var(--ink-2);font-style:italic}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.two.one{grid-template-columns:1fr}
+.demo{border-top:5px solid var(--good)}
+.gate{border:2px solid var(--p-aim);background:color-mix(in srgb,var(--honey) 7%,var(--surface))}
+.gate .gh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.gate .gh h3{margin:0}
+.gate .gdue{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2)}
+.gate .gbar{height:7px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin:8px 0}
+.gate .gbar i{display:block;height:100%;background:var(--honey)}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.notes .card h3{font-size:15px;letter-spacing:.02em}
+.notes .card.trap h3{color:var(--p-qual)}
+.notes .card.behind h3{color:var(--warn)}
+.notes .card.ahead h3{color:var(--good)}
+.row-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+.copied{font-size:13px;color:var(--good)}
+
+/* ---------- Snapshot + budget ---------- */
+.sec{margin-top:44px}
+.sec>h2{font-size:clamp(22px,3.2vw,30px);font-weight:800}
+.sec>.lede{color:var(--ink-2);max-width:72ch;margin-top:4px}
+.duo{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;margin-top:14px}
+.facts{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.facts li{display:grid;grid-template-columns:96px 1fr;gap:10px;font-size:15px;color:var(--ink-2)}
+.facts b{color:var(--ink)}
+.sub-h{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.sub-h ul{margin-top:6px}
+.doc{display:inline-block;margin-top:12px;font-size:14px;font-weight:700}
+.budget table{width:100%;border-collapse:collapse;font-size:14.5px}
+.budget th{font-family:var(--f-display);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);text-align:left;padding:4px 4px}
+.budget td{padding:3px 4px}
+.budget input[type=text]{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 8px}
+.budget input[type=number]{width:58px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 6px}
+.budget .x{border:0;background:transparent;color:var(--ink-2);font-size:18px;line-height:1;padding:2px 8px}
+.bud-tot{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
+.bt{background:var(--surface-2);border-radius:10px;padding:8px 12px}
+.bt .v{font-family:var(--f-display);font-weight:800;font-size:22px}
+.bt.over .v{color:var(--bad)} .bt.full .v{color:var(--warn)}
+.bt .b{height:6px;background:var(--surface);border-radius:9px;overflow:hidden;margin-top:4px}
+.bt .b i{display:block;height:100%;background:var(--good)}
+.bt.full .b i{background:var(--warn)} .bt.over .b i{background:var(--bad)}
+.vsteps{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:v}
+.vsteps li{display:grid;grid-template-columns:30px 1fr;gap:10px;font-size:15px;color:var(--ink-2)}
+.vsteps li::before{counter-increment:v;content:counter(v);width:26px;height:30px;display:grid;place-items:center;background:var(--p-scrim);color:var(--on-phase);font-family:var(--f-mono);font-weight:600;font-size:13px;clip-path:var(--hex)}
+.vsteps b{color:var(--ink)}
+.wkref{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
+
+/* ---------- Season outline ---------- */
+.ph{margin-top:22px}
+.ph-h{display:flex;gap:12px;align-items:stretch}
+.ph-h .sw{width:8px;border-radius:4px;background:var(--c)}
+.ph-h h3{font-size:20px}
+.ph-h p{color:var(--ink-2);font-size:14.5px;max-width:70ch}
+.rows{display:grid;gap:8px;margin-top:10px}
+.row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;text-align:left;width:100%}
+.row:hover{border-color:var(--honey)}
+.row.now{box-shadow:0 0 0 2px var(--honey)}
+.row.sel{border-color:var(--c)}
+.row .n{width:40px;height:45px;background:var(--c);clip-path:var(--hex);display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;color:var(--on-phase)}
+.row.brk .n{color:var(--ink)}
+.row .d{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.row .t{font-family:var(--f-display);font-weight:700;font-size:17px}
+.row .g{font-size:14px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row .pp{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+/* ---------- Cheat sheets, rails ---------- */
+.stack{display:grid;gap:12px;margin-top:14px}
+details.cs{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:0}
+details.cs>summary{list-style:none;cursor:pointer;padding:14px 18px;font-family:var(--f-display);font-weight:800;font-size:18px;display:flex;justify-content:space-between;gap:10px}
+details.cs>summary::-webkit-details-marker{display:none}
+details.cs>summary::after{content:"▸";color:var(--ink-2)}
+details.cs[open]>summary::after{content:"▾"}
+details.cs>.in{padding:0 18px 18px;display:grid;gap:12px;font-size:15px;color:var(--ink-2)}
+details.cs .in b{color:var(--ink)}
+details.cs ul{margin:0;padding-left:18px;display:grid;gap:5px}
+table.t{border-collapse:collapse;width:100%;font-size:14.5px}
+table.t th,table.t td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+table.t th{font-family:var(--f-display);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+table.t td.n{font-family:var(--f-mono);white-space:nowrap}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.rule-list{margin:0;padding:0;list-style:none;display:grid;gap:7px}
+.rule-list li{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:15px;color:var(--ink-2)}
+.rule-list li::before{content:"";width:12px;height:13px;margin-top:6px;background:var(--honey);clip-path:var(--hex)}
+.rule-list b{color:var(--ink)}
+.rhythm{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.rhythm li{display:grid;grid-template-columns:70px 1fr;gap:10px;font-size:15px;color:var(--ink-2)}
+.rhythm b{font-family:var(--f-display);color:var(--ink)}
+.catchup{margin-top:16px;background:var(--honey-soft);border:1px solid color-mix(in srgb,var(--honey) 40%,transparent);border-radius:14px;padding:16px 20px}
+.catchup b{color:var(--honey-ink)}
+footer{margin-top:56px;padding-block:24px 56px;border-top:1px solid var(--line);color:var(--ink-2);font-size:14px}
+footer p{max-width:80ch;margin-bottom:8px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+.tools textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:8px;font-family:var(--f-mono);font-size:12px}
+.tools label{font-size:13.5px;display:flex;gap:6px;align-items:center}
+.tools input[type=date]{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 8px}
+
+@media (max-width:900px){
+  .dash,.duo,.cols3,.cols2,.two,.notes,.lanes{grid-template-columns:1fr}
+  .trk{grid-column:1/-1}
+  .miles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .overall{margin-left:0}
+  .hero-side{text-align:left}
+  .facts li{grid-template-columns:1fr;gap:0}
+  .wv-head{grid-template-columns:1fr}
+  .row{grid-template-columns:auto 1fr}
+  .row .pp{grid-column:1/-1;justify-content:flex-start}
+}
+@media (prefers-reduced-motion:no-preference){
+  .nw .ring{animation:pulse 2.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:.45}50%{transform:scale(1.18);opacity:.18}}
+  .node{transition:filter .15s}
+}
+@media print{
+  .bar,.preview,.hero,.dash,.sec,footer,.wv-nav,.row-actions,.btn{display:none!important}
+  body{background:#fff;color:#000}
+  .wv{margin:0}
+  details.trk:not([open]) .tb{display:block}
+  .card,.trk,.wv-head{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <div class="brand"><div class="hex" aria-hidden="true"></div>BIOBUZZ Rails <small>Trinity Robotics</small></div>
+    <div class="seg-wrap"><span class="label">Team</span>
+      <div class="seg" id="teamseg" role="group" aria-label="Choose your team">
+        <button data-team="2827" aria-pressed="false">2827</button>
+        <button data-team="3587" aria-pressed="false">3587</button>
+      </div>
+    </div>
+    <div class="seg-wrap"><span class="label">View</span>
+      <div class="seg" id="roleseg" role="group" aria-label="Choose your track">
+        <button data-role="all" aria-pressed="true">Everyone</button>
+        <button data-role="B" aria-pressed="false">Build</button>
+        <button data-role="S" aria-pressed="false">Software</button>
+        <button data-role="D" aria-pressed="false">Drive</button>
+        <button data-role="O" aria-pressed="false">Outreach</button>
+      </div>
+    </div>
+    <div class="overall"><span id="overall-text">0 checks</span><div class="meter" aria-hidden="true"><i id="overall-bar"></i></div></div>
+  </div>
+</header>
+<div class="preview" id="preview" hidden><div class="wrap"></div></div>
+
+<main class="wrap">
+  <section class="hero" id="hero" aria-label="Where we are in the season"></section>
+
+  <section class="dash" id="dash" aria-label="Rails check and heads-up"></section>
+
+  <section class="wv" id="weekview" aria-label="Week plan"></section>
+
+  <section class="sec" id="snapshot">
+    <div class="label">Robot snapshot</div>
+    <h2 id="snap-title">The robot as designed today</h2>
+    <p class="lede">What each team is building right now, and the numbers that can quietly break a plan: the 8-motor and 8-servo limits. When the design changes, change this card, and the plan follows.</p>
+    <div class="duo">
+      <div class="card" id="teamcard"></div>
+      <div class="card budget" id="budget"></div>
+    </div>
+    <div class="card" style="margin-top:16px" id="visioncard">
+      <h3>Camera and vision plan, in five steps</h3>
+      <p class="note" style="margin-bottom:10px">Build and software share this one: the camera mount has to be decided before the vision code means anything.</p>
+      <ol class="vsteps" id="vsteps"></ol>
+      <p class="note" id="vnote" style="margin-top:12px"></p>
+    </div>
+  </section>
+
+  <section class="sec" id="outline">
+    <div class="label">The whole season</div>
+    <h2>Every week at a glance</h2>
+    <p class="lede">Tap a week to open its plan. The red <b>!</b> on the tracker means a past week still has unticked demos.</p>
+    <div id="phases"></div>
+  </section>
+
+  <section class="sec" id="rails">
+    <div class="label">How the rails work</div>
+    <h2>Not strict. There to keep us on course.</h2>
+    <div class="cols2" style="margin-top:14px">
+      <div class="card">
+        <h3>A week, 4 × 50 min + Saturday</h3>
+        <ul class="rhythm">
+          <li><b>Monday</b><span>10-minute all-hands. Read this week’s page out loud, put a name next to every task, check for a new Team Update or Q&amp;A answer.</span></li>
+          <li><b>Tue–Wed</b><span>Work. Builders are on call for coders; coders tell builders what they find. Everything touched goes in the notes.</span></li>
+          <li><b>Thursday</b><span><b>Demo day.</b> Show every “Done when” box. Tick only what you showed. Triage the driver wish list. Each team shares one thing it learned with the other team.</span></li>
+          <li><b>Friday</b><span>Five minutes: check the heads-up list, update the notes, use “Copy status” to post the week in team chat.</span></li>
+          <li><b>Saturday</b><span>Optional, 3 hours: the deep-work task, plus driver practice. Never the only chance to get something done.</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>The catch-up ladder</h3>
+        <ol class="plain">
+          <li><b>Carry-over first.</b> Unticked demos from earlier weeks come before new work, unless the week page says they can be cut.</li>
+          <li><b>Cut from the “If you’re behind” line.</b> Every week names what to drop and what never to drop.</li>
+          <li><b>Borrow people.</b> Builders can run drive tests, coders can wire, drivers can build the practice field.</li>
+          <li><b>Protect three things:</b> drivers’ time on the robot, the next gate, and a release that installs without Wi-Fi.</li>
+        </ol>
+        <p class="note" style="margin-top:10px">Drifting is normal. Staying quiet about it isn’t. Say it Monday, not on the day of the event.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Rules that never change</h3>
+      <div class="cols3" style="margin-top:6px">
+        <div>
+          <div class="label" style="margin-bottom:6px">Whole team</div>
+          <ul class="rule-list">
+            <li><span><b>If it isn’t written down, it didn’t happen.</b> A notes entry every session. That’s the portfolio.</span></li>
+            <li><span><b>Change one thing at a time</b> and write down what happened.</span></li>
+            <li><span><b>Eye protection</b> whenever a shooter runs. Nobody stands in front of a flywheel.</span></li>
+            <li><span><b>Batteries</b> are labeled, rotated and never charged unattended.</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:6px">Build &amp; drive</div>
+          <ul class="rule-list">
+            <li><span><b>Drivers get the robot before anyone polishes it.</b></span></li>
+            <li><span><b>Accurate beats fast:</b> 4 of 4 in 3 s beats 2 of 4 in 1 s.</span></li>
+            <li><span><b>Mechanical mods need four lines:</b> what, why, how we’ll test it, how we roll it back. If it can’t roll back before the next event, don’t.</span></li>
+            <li><span><b>Seven days before an event:</b> repairs only. No new mechanisms, no new features.</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:6px">Code</div>
+          <ul class="rule-list">
+            <li><span><b>Code ends every session on the robot.</b></span></li>
+            <li><span><b>No waiting in robot code.</b> A robot that waits can’t steer.</span></li>
+            <li><span><b>Every PR says what you didn’t test.</b></span></li>
+            <li><span><b>Every release installs offline</b> and can be rolled back by a second person.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="catchup">
+      <b>Why the season is shaped this way.</b> Robot Day is Sunday Nov 1, so the first two weeks are a sprint to a working v1. The scrimmage on Dec 12 is the dress rehearsal, and winter break sits between it and the qualifier. So we tag a release candidate on <b>Friday Dec 18</b>, use the first week of January only to fix what full matches show, and freeze on <b>Friday Jan 8</b>. Qualifier week is for driver practice, judging practice and packing. Ball-finding vision, a second Auto cycle and speed come after.
+    </div>
+  </section>
+
+  <section class="sec" id="refs">
+    <div class="label">Cheat sheets</div>
+    <h2>Keep these open</h2>
+    <div class="stack">
+
+      <details class="cs" open>
+        <summary>BIOBUZZ on one screen</summary>
+        <div class="in">
+          <div class="cols2">
+            <div>
+              <table class="t">
+                <thead><tr><th>Score</th><th>Auto</th><th>TeleOp</th></tr></thead>
+                <tbody>
+                  <tr><td>Leave the start</td><td class="n">3</td><td class="n">–</td></tr>
+                  <tr><td>Park in the Loading Zone</td><td class="n">5</td><td class="n">5</td></tr>
+                  <tr><td>Hive tip (also unlocks one nectar)</td><td class="n">20</td><td class="n">20</td></tr>
+                  <tr><td>Bottom nectar bonus (Flower)</td><td class="n">–</td><td class="n">5</td></tr>
+                  <tr><td>Element in your Garden</td><td class="n">–</td><td class="n">1</td></tr>
+                </tbody>
+              </table>
+              <p class="note" style="margin-top:8px">Points for elements left in the Hive and for owning a Flower are in manual section 10. Check the manual before you build a plan around them.</p>
+            </div>
+            <div>
+              <ul>
+                <li><b>Match:</b> 30 s Auto, then 2:00 TeleOp. Flowers open for scoring in the last 60 seconds.</li>
+                <li><b>Tipping a Hive:</b> about 8 pollen, or 5 nectar, or a mix like 3 + 3. Only launching elements into the up-cell can tip it. Pushing or grabbing it is a foul.</li>
+                <li><b>Ranking points:</b> Win 3, Tie 1. At non-championship events: Swarm at 16 points of Leave and Park, Pollinator 1 at 4 tips, Pollinator 2 at 7 tips (from the one-page description, confirm in the manual).</li>
+                <li><b>The Swarm math (our reading, confirm in the manual):</b> Leave 3 + Park 5 = 8 per robot. Two robots = 16, which matches the Swarm threshold. If that’s right, a partner who can leave and park in Auto is worth a ranking point before anyone scores.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="cols2">
+            <ul>
+              <li><b>Size:</b> start inside an 18-inch cube (R102). No weight limit (R104).</li>
+              <li><b>Parts:</b> up to 8 motors and 8 servos (R503). USB is for vision only (R707).</li>
+              <li><b>Start:</b> touching the perimeter wall, holding up to 4 pollen. Not in the Loading Zone, not touching a Flower.</li>
+              <li><b>Signs:</b> at least two robot signs with alliance color and team number (R401–R403).</li>
+            </ul>
+            <ul>
+              <li><b>Holding limit:</b> no more than 4 elements at a time (G407).</li>
+              <li><b>Opponent nectar:</b> don’t control it (G408). Nectar goes into Flowers only in the last minute (G410).</li>
+              <li><b>Human player:</b> nectar enters only through the Loading Zone, and only after a tip unlocks it (G426, G427).</li>
+              <li><b>Don’t meddle</b> with the Hive or the Flowers (G417, G418).</li>
+            </ul>
+          </div>
+          <div class="learn">
+            <a href="https://ftc-resources.firstinspires.org/ftc/event/game-one-page" target="_blank" rel="noopener">One-page game description</a>
+            <a href="https://ftc-resources.firstinspires.org/ftc/archive/2027/game" target="_blank" rel="noopener">Manual, Team Updates, Q&amp;A</a>
+            <a href="https://biobuzz-ten.vercel.app/rulebook/" target="_blank" rel="noopener">Searchable rule index (unofficial)</a>
+            <a href="https://www.youtube.com/watch?v=47X9sYnPijw" target="_blank" rel="noopener">Field walkthrough</a>
+            <a href="https://www.youtube.com/watch?v=sUH3z5a5S9I" target="_blank" rel="noopener">Game animation</a>
+          </div>
+        </div>
+      </details>
+
+      <details class="cs">
+        <summary>How we win: the strategy rails</summary>
+        <div class="in">
+          <ul>
+            <li><b>1. Never lose a ranking point to Auto.</b> Leave and park, every match, from every start spot. It’s 8 points per robot and, if we’re reading the Swarm rule right, a ranking point when both robots do it.</li>
+            <li><b>2. Tips are the game.</b> 20 points each, each one unlocks another nectar, and tip counts decide two more ranking points. Measure: how many seconds from first pickup to a tip?</li>
+            <li><b>3. Accuracy over speed.</b> A missed shot wastes an element that someone else can tip with. Hit rate from fixed spots comes before cycle time.</li>
+            <li><b>4. Don’t hand points away.</b> Four-element limit, no opponent nectar, no early nectar. Drivers know these cold before the scrimmage.</li>
+            <li><b>5. Expect friendly defense.</b> The game is highly interactive. Practice with a teammate defending, and decide what each team does about it (2827’s traction mode exists for this).</li>
+            <li><b>6. Flowers are optional.</b> Both teams are skipping them for now. Revisit after the qualifier with real match data, not hunches.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="cs">
+        <summary>What other teams are learning about vision</summary>
+        <div class="in">
+          <ul>
+            <li><b>The tags move.</b> Each Hive cell has a 4-tag cluster on its underside, facing down, and it tips with the Hive (manual 9.6, 9.9). The tags can’t be fixed landmarks the way they were in past seasons.</li>
+            <li><b>Odometry does the localizing.</b> On Chief Delphi most teams use Pinpoint for position and keep tags for aiming and for telling which cell is up. One team reports Pinpoint back within about 1 in after random driving.</li>
+            <li><b>A wrong fix is worse than a late one.</b> Mona Shores only corrects the pose from a cell that has settled, and pauses corrections during a tip.</li>
+            <li><b>Limelight’s full-field pose is fragile here.</b> All 8 pipelines share one field map, you need a red and a blue map, and there’s no filter for upside-down tags. Rocket Robotics (21615) published a Python cluster pipeline instead, which gives range, bearing and roll to the cell’s center.</li>
+            <li><b>Cheap drift fix.</b> Several teams suggest a driver button that resets the pose when the robot is pushed into a known corner.</li>
+            <li><b>Balls: color first.</b> A color pipeline runs at about 90 fps on a Limelight 3A; a trained detector at about 11 fps. Yellow pollen is the easiest to find. Red nectar gets confused with tape, panels and skin, and shadows hurt the simple color filter most.</li>
+            <li><b>One tilt, one job.</b> Tags hang above and face down; balls sit on the floor. Pick what each camera is for. (3587 is doing it with two cameras.)</li>
+          </ul>
+          <div class="learn">
+            <a href="https://www.chiefdelphi.com/t/idea-about-ftc-biobuzz-localization/524104" target="_blank" rel="noopener">CD: BIOBUZZ localization</a>
+            <a href="https://www.chiefdelphi.com/t/ftc-biobuzz-limelight-settings-fmap/524110" target="_blank" rel="noopener">CD: Limelight field map</a>
+            <a href="https://github.com/Mona-Shores-FTC-Robotics/biobuzz/issues/82" target="_blank" rel="noopener">Mona Shores: localization plan</a>
+            <a href="https://github.com/pccsrocketrobotics/limelight-apriltag-clusters" target="_blank" rel="noopener">Rocket Robotics: cluster pipeline</a>
+            <a href="https://github.com/SASApantheon5193/biobuzz-pollen-vision" target="_blank" rel="noopener">Pollen vision (color vs neural)</a>
+            <a href="https://github.com/Mona-Shores-FTC-Robotics/biobuzz/issues/139" target="_blank" rel="noopener">Mona Shores: HSV vs Lab colors</a>
+          </div>
+        </div>
+      </details>
+
+      <details class="cs">
+        <summary>Where this format comes from</summary>
+        <div class="in">
+          <p>The “Week N plan for success” idea is borrowed from <b>Coach Brogan Pratt’s</b> DECODE series: each week gets one plan, split into build &amp; design, programming and outreach. We added drive &amp; strategy, gates, and a rails check on top.</p>
+          <ul>
+            <li><b>Test several ideas before committing.</b> His Week 3 plan pushes quick prototypes of more than one intake and launcher before anyone falls for the first thing that works. Same idea here: nothing gets cut in final parts until it’s been tested in cardboard or quick-build.</li>
+            <li><b>Programming runs on a test robot early,</b> with pathing and driver automations coming together before the real robot is finished. That’s why code is written before Robot Day.</li>
+            <li><b>Outreach and documentation are part of the plan, not a scramble in January.</b> Written goals, a master season-notes document, and portfolio pages that grow every week.</li>
+          </ul>
+          <div class="learn">
+            <a href="https://www.youtube.com/watch?v=v2Roi633ZkY" target="_blank" rel="noopener">Pratt: Week 3 plan for success</a>
+            <a href="https://www.youtube.com/@BroganMPratt/videos" target="_blank" rel="noopener">Pratt’s channel</a>
+            <a href="https://www.chiefdelphi.com/t/ftc-12862-build-thread-2025-decode/505789" target="_blank" rel="noopener">Example: an open build thread</a>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <footer>
+    <p>Planned dates: robot to coders Sun 1 Nov 2026, NC scrimmage Sat 12 Dec, NC qualifier Sat 16 Jan 2027. Confirm event dates on the NC FTC calendar.</p>
+    <p>Team plans follow each team’s design snapshot from the 17 Oct interviews. Designs will change; update the robot snapshot and the plan when they do.</p>
+    <p>Game facts from the BIOBUZZ Competition Manual (TU05, Oct 15) and the one-page game description. Recheck Team Updates and Q&amp;A every Monday and before every event, including where the AprilTags are.</p>
+    <p>Checkmarks are saved in this browser, per team. To share progress with a teammate or move to another device, use the backup box below.</p>
+    <div class="tools">
+      <button class="btn sm" id="export" type="button">Copy my progress code</button>
+      <button class="btn sm" id="import" type="button">Load a progress code</button>
+      <button class="btn sm" id="reset" type="button">Clear this team’s checks</button>
+      <label>Preview a date <input type="date" id="previewdate"></label>
+      <span class="copied" id="toolmsg" role="status" aria-live="polite"></span>
+    </div>
+    <div class="tools" id="importbox" hidden><textarea id="importtext" aria-label="Paste a progress code here" placeholder="Paste a progress code here, then press Load."></textarea><button class="btn sm" id="importgo" type="button">Load</button></div>
+  </footer>
+</main>
+
+<script>
+/* ============================================================
+   DATA: tracks, links, teams, phases, milestones
+   Weeks live in the next two files. Items starting with "B:", "S:", "D:", "O:" or "A:"
+   are tagged to Build, Software, Drive & Strategy, Outreach & Awards or All hands.
+   Progress IDs come from a hash of the item text, so editing a line resets its tick.
+   ============================================================ */
+
+const TRACKS = {
+  B: {name:"Build & Design", short:"Build", sub:"mechanical + electrical"},
+  S: {name:"Software", short:"Software", sub:"Motion + Scoring lanes"},
+  D: {name:"Drive & Strategy", short:"Drive", sub:"drivers, scouting, game plan"},
+  O: {name:"Outreach & Awards", short:"Outreach", sub:"portfolio, judging, community"},
+  A: {name:"All hands", short:"All", sub:"everyone, together"},
+};
+
+const LINKS = {
+  onepage: ["BIOBUZZ one-page description", "https://ftc-resources.firstinspires.org/ftc/event/game-one-page"],
+  manual: ["BIOBUZZ game manual", "https://ftc-resources.firstinspires.org/ftc/archive/2027/game"],
+  walkthrough: ["Field walkthrough (video)", "https://www.youtube.com/watch?v=47X9sYnPijw"],
+  animation: ["Game animation (video)", "https://www.youtube.com/watch?v=sUH3z5a5S9I"],
+  rules: ["Searchable rule index (unofficial)", "https://biobuzz-ten.vercel.app/rulebook/"],
+  pratt3: ["Pratt: a week plan, as an example", "https://www.youtube.com/watch?v=v2Roi633ZkY"],
+  openthread: ["Example open build thread", "https://www.chiefdelphi.com/t/ftc-12862-build-thread-2025-decode/505789"],
+  gm0: ["gm0: Game Manual 0", "https://gm0.org/en/latest/"],
+  revdocs: ["REV docs", "https://docs.revrobotics.com/"],
+  ftcdocs: ["FTC Docs", "https://ftc-docs.firstinspires.org"],
+  sdk: ["FTC SDK releases", "https://github.com/FIRST-Tech-Challenge/FtcRobotController/releases"],
+  gm0mec: ["gm0: Mecanum drive", "https://game-manual-0.readthedocs.io/en/latest/docs/software/tutorials/mecanum-drive.html"],
+  gm0ctrl: ["gm0: Control loops", "https://game-manual-0.readthedocs.io/en/latest/docs/software/concepts/control-loops.html"],
+  gm0odo: ["gm0: Odometry", "https://game-manual-0.readthedocs.io/en/latest/docs/software/concepts/odometry.html"],
+  gm0fsm: ["gm0: State machines", "https://game-manual-0.readthedocs.io/en/latest/docs/software/concepts/finite-state-machines.html"],
+  gm0bulk: ["gm0: Bulk reads", "https://game-manual-0.readthedocs.io/en/latest/docs/software/tutorials/bulk-reads.html"],
+  pratt: ["Learn Java for FTC (videos)", "https://www.youtube.com/playlist?list=PLRHdgFNRLyaPiZ5rvINwMmGMHEIL9usla"],
+  ghflow: ["GitHub flow", "https://docs.github.com/en/get-started/using-github/github-flow"],
+  ref: ["Our reference project", "https://github.com/marktsears/ftc-decode-reference"],
+  pedro: ["Pedro Pathing docs", "https://pedropathing.com/"],
+  pinpoint: ["goBILDA Pinpoint", "https://www.gobilda.com/pinpoint-odometry-computer-imu-sensor-fusion-for-2-wheel-odometry/"],
+  ll: ["Limelight FTC setup", "https://docs.limelightvision.io/docs/docs-limelight/getting-started/FTC/setup"],
+  llprog: ["Limelight FTC programming", "https://docs.limelightvision.io/docs/docs-limelight/apis/ftc-programming"],
+  llcolor: ["Limelight color pipelines", "https://docs.limelightvision.io/docs/docs-limelight/pipeline-retro/retro-theory"],
+  clusters: ["Limelight cluster pipeline (Rocket Robotics)", "https://github.com/pccsrocketrobotics/limelight-apriltag-clusters"],
+  sdkclusters: ["SDK 12 AprilTag clusters", "https://ftc-docs.firstinspires.org/en/latest/tech_tips/tech-tips/tech-tip-apriltag-clusters/tech-tip-apriltag-clusters.html"],
+  trcll: ["Limelight 3A pollen guide (TRC)", "https://irp.cdn-website.com/3a1d1852/files/uploaded/TRC_Limelight_Guide_BIOBUZZ.pdf"],
+  tags: ["AprilTags in FTC", "https://ftc-docs.firstinspires.org/en/latest/apriltag/vision_portal/apriltag_intro/apriltag-intro.html"],
+};
+
+const SNAPSHOT = {
+  "2827": "https://claude.ai/code/artifact/19d85788-7255-4c0d-83b7-cc5e9957b5b9",
+  "3587": "https://claude.ai/code/artifact/fbdd724b-5734-4863-8173-9449feb186f6",
+};
+
+// Each team's robot as of the 17 Oct interviews (plus the 3587 camera update).
+const TEAMS = {
+  "2827": {
+    plan: "Fast, accurate pollen cycles, plus defense. No Flowers.",
+    facts: [
+      ["Drive", "Butterfly: mecanum-style fast mode and a traction mode for shooting and defense."],
+      ["Odometry", "Not chosen yet. Plan on Pinpoint with two pods; drive encoders can’t be trusted in two modes."],
+      ["Shooter", "One turret shooter, pollen only, hood on a servo. Backspin wheel maybe."],
+      ["Turret", "One motor if it fits in the 8, otherwise 2 servos. Zero method not chosen."],
+      ["Balls", "Color sensors at intake and shooter. Reject all nectar; stop at 4."],
+      ["Intake", "Servo deploys it at the start; runs in and out."],
+      ["Camera", "Not decided. Recommended: Limelight on the turret, tilted up at the Hive cells. Charlotte’s ball-following exists."],
+    ],
+    risks: [
+      "The turret decision (1 motor vs 2 servos) sets the whole port budget. Decide it in Week 1.",
+      "The mode switch is a wear point. If the traction wheels drop, the Pinpoint pods must still touch the floor.",
+      "Color sensors read ambient light as much as balls. Shield them and test with shadows.",
+      "A camera on a turret needs a cable path through the full rotation.",
+    ],
+    changes: [
+      "Nectar comes back: add a second preset table and copy 3587’s one-class, two-shooter pattern.",
+      "Limelight goes on the chassis facing the floor: it becomes a ball camera like 3587’s, and a driver button says which cell is up.",
+      "Turret ends up on 2 position servos: no homing needed, but check the angle range first.",
+    ],
+  },
+  "3587": {
+    plan: "Shoot both pollen and nectar and tip the Hive as often as possible. No Flowers.",
+    facts: [
+      ["Drive", "Mecanum."],
+      ["Odometry", "Pinpoint (probably)."],
+      ["Shooters", "Two turret shooters, one for nectar and one for pollen, hood on a servo each."],
+      ["Turrets", "Servos through gears. Position servos know their angle, so no homing."],
+      ["Transfer", "Passive sort: pollen drops through the nectar rails. One transfer motor, 2 gate servos."],
+      ["Balls", "No sensors before the qualifier: drivers reverse out extras and opponent nectar."],
+      ["Cameras", "Two. Limelight mounted down at the floor for ball detection, plus a regular USB webcam looking up at the Hive’s AprilTags."],
+    ],
+    risks: [
+      "Motors are already 8 of 8. Every new motor costs an old one.",
+      "Count servos with care: 2 hoods, the turret servos (a geared turret may use two) and 2 gates add up fast against 8.",
+      "The passive sort is clever and will jam if balls arrive in a bad order. Test it with 20 mixed balls before anything is built around it.",
+      "Both shooters spinning at once can sag the battery. Measure it before the shot test.",
+      "Two cameras share the hub’s USB. Check which port the Limelight needs and run the webcam at a low resolution.",
+    ],
+    changes: [
+      "Switch to one shooter: one Shooter object with a preset table per ball type.",
+      "The webcam can’t see the tags well: move it, or fall back to Pinpoint-only aiming with a driver button for which cell is up.",
+      "Motor list changes: you’re at 8 of 8 already, so every new motor costs an old one.",
+    ],
+  },
+};
+
+// Starter numbers from the snapshot. Teams edit these on the page.
+const BUDGET = {
+  "2827": [["Drivetrain + mode switch (guess)",4,1],["Intake + deploy",1,1],["Flywheel",1,0],["Hood",0,1],["Turret (1-motor version)",1,0],["Feed / transfer (guess)",1,0]],
+  "3587": [["Drivetrain",4,0],["Nectar flywheel",1,0],["Pollen flywheel",1,0],["Intake",1,0],["Transfer",1,0],["Hoods (2)",0,2],["Turrets (2, geared servos)",0,2],["Gates (2)",0,2]],
+};
+
+const VISION = [
+  ["Bench", {"2827":"Tag pipeline reads our alliance’s Hive cluster IDs; a color pipeline finds yellow pollen. Export both pipelines into the repo.", "3587":"Limelight: a color pipeline finds yellow pollen. Webcam: the SDK’s AprilTag processor reads tag IDs, range and bearing. Export the Limelight pipeline into the repo."}, 2],
+  ["Give each camera one job", {"2827":"On the turret, tilted up at the Hive cells: aiming and which cell is up. Ball-finding needs Charlotte’s camera or waits.", "3587":"Limelight tilted down at the floor: finding balls. Webcam tilted up at the Hive: reading its tags. Neither camera does the other’s job."}, 2],
+  ["See the Hive or the balls", {"2827":"Range, bearing and roll to the up cell’s center from its 4-tag cluster. Roll tells you which cell is up.", "3587":"Webcam: each cell has its own 4 tag IDs, so the IDs say which cell is up, and the SDK’s cluster support gives one pose from the 4 tags. Limelight: yellow pollen first, then our nectar color; log false hits on tape and shirts."}, 6],
+  ["Aim, with odometry first", {"2827":"Pinpoint aims the turret. The tag bearing trims it only when the cell has settled and 2 or more tags are seen.", "3587":"Pinpoint aims both turrets. The webcam’s tag bearing trims them only when the cell has settled and 2 or more tags are seen. A corner-reset button fixes drift, and a driver button overrides which cell is up if the webcam is blinded."}, 7],
+  ["Find balls in Auto", {"2827":"Bring in Charlotte’s ball-following for the last few feet of a pickup, behind an off switch.", "3587":"Limelight steers the last few feet to pollen and skips opponent nectar. It’s already on the floor, so start earlier if you’re ahead."}, {"2827":9, "3587":13}],
+];
+const VISION_NOTE = {
+  "2827": "One camera runs one pipeline at a time. Switching takes a few frames, so never switch pipelines in the middle of a shot.",
+  "3587": "Each camera keeps one job, so no pipeline switching. The two cameras share the hub’s USB: set the webcam’s exposure by hand, keep its resolution low, and check which Control Hub port the Limelight needs.",
+};
+
+// Stages of the season (the pizza-tracker steps).
+const PHASES = [
+  {id:"sprint", name:"Sprint to Robot Day", color:"--p-sprint", blurb:"Two weeks to build v1, write every subsystem, and hand a working robot to coders and drivers on Sunday Nov 1."},
+  {id:"bring", name:"Bring-up", color:"--p-bring", blurb:"Drivers driving by day three. Then motion and scoring run in parallel while builders harden the robot from what drivers and coders find."},
+  {id:"aim", name:"Aim and integrate", color:"--p-aim", blurb:"Turret, camera and one-button scoring come together. Accuracy from fixed spots must already work."},
+  {id:"scrim", name:"Scrimmage", color:"--p-scrim", blurb:"The dress rehearsal. Play full matches, find every failure, fix the top three, tag a release candidate before break."},
+  {id:"break", name:"Winter break", color:"--p-break", blurb:"Optional. rc1 is tagged and the robot has a home. Rest, write the portfolio, or study top teams."},
+  {id:"qual", name:"Qualifier push", color:"--p-qual", blurb:"Fixes only, then freeze on Jan 8. Qualifier week is for driver practice, judging practice and packing."},
+  {id:"post", name:"After the qualifier", color:"--p-post", blurb:"Improve from match data: ball-finding vision, a second Auto cycle, then speed. Every change has a test and a rollback."},
+];
+
+// Dates that matter. "week" is where the flag sits on the tracker.
+const MILESTONES = [
+  {key:"robot", name:"Robot Day", date:"2026-11-01", week:2, flag:["robot","ROBOT DAY"]},
+  {key:"scrim", name:"NC scrimmage", date:"2026-12-12", week:8, flag:["scrim","SCRIMMAGE"]},
+  {key:"rc1", name:"Release candidate", date:"2026-12-18", week:9, flag:["gate","RC1"]},
+  {key:"freeze", name:"Freeze", date:"2027-01-08", week:11, flag:["gate","FREEZE"]},
+  {key:"qual", name:"NC qualifier", date:"2027-01-16", week:12, flag:["","QUALIFIER"]},
+];
+
+// A short list for the weekend before Week 1.
+const PRE = [
+  "A: Open this page together and pick your team (top bar). Checks save in this browser.",
+  "A: Put Monday’s 10-minute kickoff on the calendar and decide who runs it.",
+  "D: Everyone on the drive team watches the field walkthrough and the game animation.",
+  "S: Both coders clone the reference project and make sure it builds.",
+  "O: Ask the event organizers for the qualifier’s portfolio deadline and interview schedule.",
+  "B: Each team’s build lead reads the Robot Day Gate on the Week 2 page and says out loud what’s at risk.",
+];
+/* ============================================================
+   WEEKS 1–8
+   Fields: build, motion, scoring, both (software), drive, outreach, all  = tasks
+           done = Thursday demo checks, gate = cross-team checkpoint,
+           heads = lead-time reminders, behind / ahead = scope rails,
+           t = per-team overrides (xxxAdd appends, xxxPre prepends, xxx replaces)
+   ============================================================ */
+const WEEKS_A = [
+ {n:1, start:"2026-10-19", phase:"sprint", title:"Lock v1, start building, start writing code",
+  goal:"Both teams have a one-page v1 plan, the drivetrain is on its way to driving, and software can build and deploy on its own.",
+  why:"Robot Day is Sunday Nov 1, thirteen days after this week starts. Anything not decided this week gets built in a rush next week.",
+  build:[
+   "Lock the v1 plan on one page: every mechanism, who builds it, and a motor and servo count against the limits (8 motors, 8 servos).",
+   "Any mechanism that hasn’t been tested in cardboard or quick-build yet gets a quick test before final parts are cut.",
+   "Drivetrain first: chassis, wheels, motors, hubs, battery. Aim for it driving by the end of the week so coders have something to test on.",
+   "Reserve spots for the two Pinpoint pods so they sit rigid on the chassis and touch the floor.",
+  ],
+  motion:["Each coder builds and installs the app on a Control Hub (last year’s robot is fine)."],
+  scoring:["Set up the folders from our reference project: subsystems/, opmodes/{teleop, auto, test}/, Robot.java.","Write the driver control map with the drivers: every button for every planned mechanism."],
+  both:["Protect main and add the PR template. Each coder merges one PR the other reviewed.","Agree every hardware name with the builders in the README (motor and servo names, ports)."],
+  drive:[
+   "Everyone on the drive team reads the one-page game description and watches the field walkthrough.",
+   "Pick who tries out as driver, second driver or coach, and human player. Rotate through until Week 8; nobody is locked in yet.",
+   "Write strategy v1 on one page: how we want to score, what Auto does, and what we won’t do. Include the tip math.",
+  ],
+  outreach:[
+   "Write team goals and individual goals on the wall and in the notes. Judges like goals that got updated.",
+   "Name three people: outreach lead, portfolio lead, judging lead. Names, not “everyone”.",
+   "Start one master season-notes doc. Every track adds to it every Thursday; the portfolio is built from it.",
+  ],
+  all:["Agree who runs Monday’s kickoff and Thursday’s demo, and where the notes, the repo and the chat live."],
+  done:[
+   "B: One-page v1 plan agreed, motor and servo counts under the limits",
+   "B: Drivetrain turns its wheels from a gamepad",
+   "S: Each coder built and installed the app this week",
+   "S: Folders match the reference layout",
+   "S: Drive code runs on last year’s robot or a test chassis",
+   "S: Hardware names are written in the README",
+   "D: Drivers approved the control map",
+   "D: Strategy v1 is written on one page",
+   "O: Goals are written, three leads are named, master notes exist",
+  ],
+  heads:[
+   "B: Parts order placed by Wednesday so it arrives before Robot Day.",
+   "O: Ask the event organizers for the qualifier’s portfolio deadline and interview schedule.",
+   "D: Decide where the practice field lives, who builds it, and when.",
+  ],
+  behind:"Strategy v1 can be rough and outreach goals can be one line each. Never cut the parts order or the drivetrain.",
+  ahead:["Start the practice field: lay tiles and walls.","Draft the pre-match checklist."],
+  sat:"Builders finish the chassis. Coders bench-test the Pinpoint: plug it into a hub, slide it by hand, and watch x, y and heading. Drivers watch the walkthrough together and argue about strategy.",
+  trap:["Waiting for the robot to start coding, or for code to start building. Every track runs in parallel.","Designing for a perfect robot. v1 means the smallest robot that can drive, intake and shoot."],
+  learn:["onepage","walkthrough","ghflow","ref","gm0mec","gm0"],
+  t:{
+   "2827":{
+    buildAdd:[
+     "Decide the turret now: one motor (if it fits within the 8 motors) or two servos. It sets the port budget, so decide by Wednesday.",
+     "Decide how the Butterfly mode switch is actuated (servo? which port?) and tell software.",
+     "Pick spots for the two color sensors (intake and shooter) and how to shield them from room light.",
+    ],
+    motionAdd:["Butterfly drive subsystem with two modes: mecanum math in fast mode, tank math in traction mode. One button switches.","Ask the builders how the mode switch is actuated and put it in the README."],
+    doneAdd:["S: Mode switch is one button in code, even before the hardware exists"],
+   },
+   "3587":{
+    buildAdd:[
+     "Build the two shooter modules from one design (hood, turret on a geared servo, flywheel) so software can use one class.",
+     "Prototype the passive sort rails with 20 mixed balls before building the final transfer.",
+     "Count servos now: 2 hoods, the turret servos and 2 gates, against the limit of 8.",
+     "Plan both camera mounts now: Limelight tilted down at the floor, a regular webcam tilted up at the Hive tags. Make both adjustable (slots, not fixed holes).",
+    ],
+    motionAdd:["Mecanum drive subsystem: robot-centric first, field-centric as a driver option, slow mode on a button."],
+   },
+  }},
+
+ {n:2, start:"2026-10-26", phase:"sprint", title:"Finish v1 and hand it over",
+  goal:"A working v1 robot is in the coders’ hands on Sunday Nov 1, and code for every subsystem is waiting for it.",
+  why:"From Nov 1, software and drivers need the robot every day. Every hour it stays in the build room is an hour they don’t get.",
+  event:"Robot Day: working robot handed to software on Sun Nov 1.",
+  build:[
+   "Mount everything that moves: intake, feed path, shooter, hood. A turret can wait if you’re behind (see below).",
+   "Wire it like it will be at a competition: strain relief on every connector, ties on every loose wire, the power switch reachable, the battery strapped.",
+   "Write the port sheet: every motor and servo, its port, and its name. It must match the names in the software README.",
+   "Check with a cardboard 18-inch cube: every mechanism fits in the starting configuration (R102).",
+   "Make a preload cradle that holds 4 pollen without anything falling out when the robot is picked up and set down.",
+  ],
+  motion:[
+   "Vision step 1: update the Limelight OS now (updates can reset pipelines), connect it to a hub, open its web page.",
+   "AprilTag pipeline: show tag IDs, tx and ty. The Hive’s tags are 4-tag clusters (36h11, 3.25 in) on the underside of each cell, facing down (manual 9.9).",
+   "Color pipeline: find a yellow pollen ball on the table and show tx, ty and size. Export both pipelines into the repo.",
+  ],
+  scoring:[],
+  both:["Vision step 2: agree each camera’s one job and tilt with the builders. Tags face down from above, balls sit on the floor, and one fixed tilt can’t serve both well.","Write the robot-day checklist: config names, directions to check, each test OpMode to run, in order.","Every subsystem gets its own Constants file."],
+  drive:[
+   "Set up the practice field: foam tiles, one-foot walls, balls, and a target at the Hive cell’s height (dimensions in manual section 9).",
+   "Learn the five easiest fouls to commit: more than 4 elements (G407), controlling opponent nectar (G408), nectar into a Flower early (G410), meddling with the Hive or Flowers (G417, G418), and early or wrong-place nectar by the human player (G426, G427).",
+   "Draft the scouting sheet: one row per team per match. Test it on the game animation.",
+  ],
+  outreach:[
+   "Choose which judged awards each team is aiming for (one or two) and write the one-paragraph story for each. A team can only win one judged award (A215), so lead with the strongest.",
+   "Put at least one outreach event on the calendar before the qualifier.",
+   "Start the portfolio: game analysis, and the design decisions (decision matrices, prototype photos) from September and October while they’re still fresh.",
+  ],
+  done:[
+   "S: Every planned subsystem has a class and a test OpMode",
+   "S: Code compiles with the agreed hardware names",
+   "S: Limelight shows a tag ID and tx on telemetry",
+   "S: Limelight finds a ball on the bench",
+   "S: Robot-day checklist is written",
+   "D: Practice field is ready",
+   "O: Award targets are chosen and the portfolio has its first pages",
+  ],
+  gate:{name:"Robot Day Gate", due:"2026-11-01", items:[
+   "B: Fits the 18-inch cube with every mechanism in its starting position",
+   "B: Intake, feed path and shooter are mounted and move (turret fixed is okay)",
+   "B: Wiring is secured, the power switch is reachable, the battery is strapped, nothing hangs near the wheels",
+   "B: The port sheet matches the software names",
+   "S: Latest code is installed on the Control Hub and builds on both coders’ laptops",
+   "D: The practice field has a Hive-height target and a gamepad is ready for each driver",
+   "O: Robot v1 photographed (front, back, top, wiring) and decisions logged in the notes",
+   "A: Everyone knows the time, place and job for Sunday Nov 1",
+  ]},
+  heads:[
+   "B: Charge, label and number every battery before Robot Day.",
+   "A: Confirm the time on Sunday Nov 1 and who needs to be in the room (builders, coders, drivers).",
+   "D: Who takes the robot home or where does it live between sessions? Decide before Sunday.",
+  ],
+  behind:"Hand over the drivetrain and intake with a fixed turret (or none) and add the turret in Week 4. Never hand over a robot that can’t drive.",
+  ahead:["Add the turret now and test its soft limits.","Run the camera cables so Week 6 is only brackets."],
+  sat:"Final build day. If the builders can spare one flywheel motor, coders bench-test it with velocity control.",
+  trap:["Calling the robot “almost done”. Done means the Robot Day Gate, not a feeling.","Using sleep() in a subsystem. Methods set goals; periodic() does the work."],
+  learn:["ll","llprog","trcll","gm0fsm"],
+  t:{
+   "2827":{
+    buildAdd:["Test both Butterfly modes on the floor. The mode switch works 20 times in a row.","Mount the shooter and hood. A fixed-angle turret is fine for hand-off."],
+    scoring:["Intake: DEPLOY (servo), INTAKE, REVERSE, OFF.","Shooter: flywheel velocity, hood servo, turret with soft limits (motor or 2-servo version behind one interface).","Color sensor test OpMode: log readings for pollen, nectar and empty at both sensor spots."],
+    doneAdd:["S: Color readings for pollen, nectar and empty are written down"],
+   },
+   "3587":{
+    buildAdd:["Both shooters spin up together without browning out the robot. Watch battery voltage while they do.","Run the passive sort with 20 mixed balls and count the wrong-shooter arrivals. Software wants this number."],
+    motion:[
+     "Limelight (the ball camera): update the OS now, connect it, and build a color pipeline that finds yellow pollen on the table: show tx, ty and size. Export it into the repo.",
+     "Webcam (the tag camera): open a VisionPortal with the SDK’s AprilTag processor and show each tag’s ID, range and bearing. Each Hive cell has 4 unique IDs, so the IDs alone say which cell you’re looking at (manual 9.9).",
+     "Set the webcam’s exposure and gain by hand so motion doesn’t blur the tags, and run it at a low resolution. The Limelight and the webcam share the hub’s USB.",
+    ],
+    scoring:["Intake and transfer: INTAKE, REVERSE, OFF.","One Shooter class (flywheel, hood servo, turret servo, gate servo). Robot makes two objects: nectarShooter and pollenShooter.","Gate: open for one ball, then close."],
+    doneAdd:["S: Webcam shows tag IDs on telemetry","S: Two shooter objects come from one class"],
+    learn:["tags","sdkclusters","llcolor","trcll","gm0fsm"],
+   },
+  }},
+
+ {n:3, start:"2026-11-02", phase:"bring", title:"Robot Day week: drivable by Wednesday",
+  goal:"Drivers drive by Wednesday. By Friday every mechanism moves from its test OpMode.",
+  why:"Drivers need practice hours as much as coders need test hours. Give them the drive first.",
+  event:"Robot Day was Sunday Nov 1. Now the robot belongs to everyone, every day.",
+  build:[
+   "Be on call during software sessions: one builder per session fixes what coders find (loose set screws, pulled wires, skewed mounts).",
+   "Thread-lock or nylon-lock every shaft collar, set screw and sprocket. Re-check after the first drive.",
+   "Start the driver wish list with the drivers: every mechanical annoyance they hit. Triage it Thursday into fix now, fix later, ignore.",
+   "If the turret missed Robot Day, finish it now.",
+   "Weigh the robot and note where the weight sits. There’s no weight limit (R104), but a tall heavy robot tips under defense.",
+  ],
+  motion:["Fix wheel directions with setDirection, not by flipping signs in the math.","Pinpoint on the real robot: enter pod offsets, push a measured 10 ft, five times, and write down the error."],
+  scoring:["Run every test OpMode from the checklist. Fix ports, directions and servo ranges.","Write down each servo’s safe min and max in Constants."],
+  both:["Turn on bulk reads and show loop time on telemetry."],
+  drive:[
+   "Drive by Wednesday: cone drills for the first hour, then pick up and move balls.",
+   "Human player drill: stand in the Loading Zone and practice the nectar hand-in (only through the Loading Zone, G427).",
+   "Keep the driver wish list. Report the top 3 every Thursday.",
+  ],
+  outreach:[
+   "Photos and video of Robot Day and the first drive. Add them to the notes with the date and what we learned.",
+   "Portfolio: write the game analysis and design process sections (decision matrices, prototypes) while they’re fresh.",
+   "Post a short “Robot Day” update with a photo.",
+  ],
+  done:[
+   "B: The robot survives a full session of driving with nothing falling off",
+   "B: Driver wish list is triaged",
+   "S: Every mechanism moves from its test OpMode",
+   "S: 10 ft error measured five times and written down",
+   "S: Loop time shows on telemetry",
+   "D: Drivers drove the robot by Wednesday",
+   "O: First-drive photos and notes are in the master doc",
+  ],
+  heads:[
+   "O: Find the qualifier registration deadline and who owns it.",
+   "B: Plan the spare-parts order for next week.",
+  ],
+  behind:"If the robot isn’t drivable by Wednesday, stop everything else and fix the drive. Drivers get the drivetrain even if the rest isn’t ready.",
+  ahead:["Start Pedro tuning (it only needs a drivetrain).","Add the first color-sensor mount."],
+  sat:"Driver practice through cones for the whole first hour. Coders write down everything drivers complain about.",
+  trap:["Letting the robot sit on the build bench all week. Agree software hours with the build lead before Monday.","Fixing things without telling anyone. Every fix goes in the notes."],
+  learn:["gm0odo","pinpoint","gm0bulk"],
+  t:{
+   "2827":{
+    buildAdd:["Check that the Pinpoint pods stay on the floor in both Butterfly modes."],
+    motionAdd:["Check odometry in both drive modes and while switching between them."],
+    doneAdd:["S: Mode switch works on the real robot"],
+   },
+   "3587":{
+    buildAdd:["Set safe open and close positions for both gate servos with software."],
+   },
+  }},
+
+ {n:4, start:"2026-11-09", phase:"bring", title:"Ball handling and Pedro",
+  goal:"Pedro follows a short path accurately, and the robot handles balls the way our design intends.",
+  why:"Pedro tuning only needs a drivetrain, so it starts now. Ball handling is where rules G407 (max 4) and G408 (no opponent nectar) become hardware and code.",
+  build:[
+   "Intake reliability test: 50 pickups with new and scuffed balls. Count jams and fix the worst one first.",
+   "Make 4 a hard limit if you can: the robot holds 4 and doesn’t pull in a fifth (G407).",
+   "Battery plan: at least 4 charged batteries, labeled and rotated. Measure the voltage drop when the shooter spins.",
+   "Order spares: wheels, belts or chain, servos, bearings, and one spare of every custom part that can break.",
+   "Warn software before any big weight change. Pedro needs retuning after.",
+  ],
+  motion:["Run Pedro’s tuning steps in order. Commit each value with a note on how you got it."],
+  scoring:[],
+  both:["Ask builders if big weight changes are coming. Pedro needs retuning after them."],
+  drive:[
+   "Time 4-ball cycles from pickup to scored, and write down the baseline.",
+   "Watch the best BIOBUZZ match videos you can find and write down what top teams do in the last 60 seconds.",
+   "Strategy v2: with real cycle times, how many tips can we make in 2:30? Compare it to the plan.",
+  ],
+  outreach:[
+   "Outreach event #1: do it, or book it.",
+   "Portfolio: add the first build and bring-up pages, with photos.",
+   "Judge-question practice: every member answers “what did you do and what did you learn?” in 30 seconds.",
+  ],
+  done:[
+   "B: Intake jam rate is measured and the worst jam is fixed",
+   "B: Spare parts are ordered",
+   "S: Every Pedro tuning step is done and committed",
+   "S: A short path ends within a few inches, 5 runs in a row",
+   "D: 4-ball cycle time baseline is written down",
+   "O: One outreach event done or booked",
+  ],
+  heads:[
+   "B: Spare parts ordered this week (shipping plus a week).",
+   "O: Qualifier registration submitted (confirm an adult has done it).",
+   "A: Thanksgiving is in two weeks: decide the plan for the short week.",
+  ],
+  behind:"Skip the second outreach pass and the video study. Never skip the intake jam test or the Pedro tuning steps.",
+  ahead:["Tune Pedro for a second start spot.","Write the first version of the shot-test sheet."],
+  sat:"Test ball handling with scuffed, dusty balls, not just new ones.",
+  trap:["Tuning Pedro while the robot is still gaining weight. Ask first.","Testing only with new balls."],
+  learn:["pedro","gm0fsm"],
+  t:{
+   "2827":{
+    buildAdd:["Color sensors: mount so ambient light and shadows don’t change readings. Test with balls in every position, including a ball showing through the holes.","Decide whether nectar is rejected mechanically or by software."],
+    motionAdd:["Tune Pedro in fast (mecanum) mode. Auto always drives in that mode."],
+    scoring:["Intake deploys on match start and stays out. In and out on buttons.","Count balls with the two color sensors. Stop intaking at 4.","Any nectar at the intake sensor: reverse it out automatically (unless the transfer rejects it mechanically)."],
+    doneAdd:["S: Count was right in 20 mixed pickups","S: Intake stops at 4","S: Nectar was spit out in 10 of 10 tries"],
+    trap:["One color sensor reading a ball through its holes. Average a few readings or use two spots.","Tuning Pedro while the robot is still gaining weight. Ask first."],
+   },
+   "3587":{
+    buildAdd:["Passive sort: run the 20-mixed-ball test with software and fix the worst jam point."],
+    scoring:["Intake and transfer on buttons: in, out, off.","Gates hold balls until a shot is called.","Test the passive sort: 20 mixed balls, count how many reach the wrong shooter."],
+    doneAdd:["S: Gates hold balls until a shot is called","S: Wrong-shooter rate from the sort test is written down"],
+   },
+  }},
+
+ {n:5, start:"2026-11-16", phase:"bring", title:"Accurate shots from fixed spots",
+  goal:"From three taped spots we know our hit rate. Auto v1 leaves the start, and parks if there’s time.",
+  why:"Accurate beats fast. Every aim and Auto step later depends on these numbers.",
+  build:[
+   "Shooter repeatability pass: kill every wobble, loose wheel, hood slop and mount flex. The same preset must land in the same place.",
+   "Check wheel compression and wear. Replace anything glazed or flat-spotted.",
+   "Put a builder at the practice field for every shot-test session.",
+  ],
+  motion:["Auto v1: start, leave the start zone, park in the Loading Zone (Leave 3 + Park 5 = 8 points, and 16 with a partner who does the same). Then add a drive to a shooting spot with the shoot call stubbed. Mirror for red and blue. Check the exact PARK rule in manual section 10."],
+  scoring:["Flywheel velocity control with battery-voltage compensation and an atSpeed() check. Feeding waits for atSpeed().","Preset table: spot → flywheel speed + hood angle."],
+  both:["Shot sheet: spot, ball type, hits out of 10, battery voltage."],
+  drive:[
+   "Mark three shooting spots on the practice field. Same spots, same tape, every test.",
+   "Help run the shot test: one driver places the robot, one records.",
+   "Strategy v3: use the measured hit rate to set our tips-per-match goal, and write what we’d give up to get it.",
+  ],
+  outreach:[
+   "Portfolio: add the shot test as a data page: table, chart, and what we changed because of it.",
+   "Outreach event #2: do it, or book it.",
+  ],
+  done:[
+   "B: Shooter lands the same shot from the same spot (10 shots, same result)",
+   "S: Three presets saved in Constants",
+   "S: Hit rate recorded for every spot",
+   "S: Feeding never happens before atSpeed()",
+   "S: Auto v1 leaves from every start spot we’ll use",
+   "D: Three spots are taped and used in every test",
+   "O: Shot-test data page is in the portfolio draft",
+  ],
+  gate:{name:"Accuracy Gate", due:"2026-11-20", items:[
+   "B: Shooter has no loose parts; every wheel, hood and mount passes a shake test",
+   "B: Spare parts have arrived or are tracked",
+   "S: Everything is merged to main and a release is tagged for this gate",
+   "D: Cycle-time baseline and the shot sheet are in the notes",
+   "O: Qualifier registration is confirmed",
+   "A: Everyone knows the plan for the short Thanksgiving week",
+  ]},
+  heads:[
+   "O: Qualifier registration confirmed by an adult.",
+   "A: Thanksgiving week: decide Wed–Sun roles, and whether anyone has lab access.",
+  ],
+  behind:"Cut Auto v1 to leave-only and add the park later. Don’t cut the shot test: every later week depends on it.",
+  ahead:["Start the turret tests early.","Try shooting from a fourth spot."],
+  sat:"Repeat the shot test on a tired battery. Note how much the hit rate drops.",
+  trap:["Changing speed and hood angle in the same test. Change one thing at a time.","Counting a shot as a hit because it “almost” went in."],
+  learn:["gm0ctrl","pedro"],
+  t:{
+   "2827":{
+    buildAdd:["If the backspin wheel is built, test it on and off with 10 shots each. Keep only what raises hits."],
+    scoringAdd:["Pollen only: 10 shots per spot. If the backspin wheel is built, test with it on and off."],
+   },
+   "3587":{
+    buildAdd:["Both shooters spinning at once: record battery voltage. If it browns out, tell software before the shot test."],
+    scoringAdd:["Both shooters, both ball types: 10 shots per spot per type."],
+    doneAdd:["S: Hit rate recorded for both shooters"],
+   },
+  }},
+
+ {n:6, start:"2026-11-23", phase:"aim", short:"Thanksgiving week", title:"Turret control and the camera’s real job",
+  goal:"The turret goes where it’s told and stays inside its limits. The camera is mounted, measured and doing its one job.",
+  why:"Aiming needs a turret you trust and a camera whose numbers mean something. The Hive tags tilt with the Hive, so the camera can’t be the robot’s map.",
+  build:[
+   "Mount the cameras where the vision plan says, adjustable and protected. Write each final position (forward, sideways, height, tilt) in the README.",
+   "Cable audit through every mechanism’s full range of motion: nothing pulls, twists or pinches at the limits.",
+   "Light week: finish what’s open and don’t start a big mechanical change right before a holiday.",
+  ],
+  motion:["Vision step 3: measure each camera’s position on the robot (forward, sideways, height, tilt) and enter it."],
+  scoring:["Manual turret aim on a driver stick, inside the limits."],
+  both:[],
+  drive:[
+   "Play a cross-team practice match: 2827 against 3587, full 2:30, if both robots are ready.",
+   "Practice Auto start spots: place the robot in the legal start position, touching the wall, 10 times each.",
+  ],
+  outreach:[
+   "Portfolio: draft the software page and the Control Award page (sensors, closed-loop control, odometry, Auto).",
+   "Write a thank-you note to a sponsor or mentor. It’s Thanksgiving.",
+  ],
+  done:[
+   "B: Cameras mounted and positions written down",
+   "S: Turret reaches a commanded angle within our tolerance",
+   "S: Soft limits stop it before cables pull",
+   "D: One full cross-team practice match played",
+   "O: Control Award page drafted",
+  ],
+  heads:[
+   "A: Scrimmage is Sat Dec 12: confirm registration, transport and permission slips.",
+   "A: Soft freeze is Wednesday Dec 9. Nothing new after that.",
+  ],
+  behind:"Skip the cross-team match and the Control Award draft. Don’t skip measuring the camera positions.",
+  ahead:["Start Week 7’s aim math early.","Work out the corner-reset position."],
+  sat:"Holiday. No Saturday session.",
+  trap:["Trusting a tag while the Hive is still swinging. Wait until it settles.","A big mechanical change in a short week: nobody is there to fix it."],
+  learn:["llprog","clusters","tags","gm0ctrl"],
+  t:{
+   "2827":{
+    buildAdd:["The Limelight sits on the turret, tilted up at the Hive cells. Check its cable through the full turret range, and that it can’t see the robot’s own parts."],
+    scoringAdd:["Turret: if it’s a motor, home it at startup with the chosen sensor, then position control with soft limits. If it’s 2 servos, drive both from one command so they never fight."],
+    motionAdd:["Load a cluster pipeline (Rocket Robotics’ Python one is a good start). Show range, bearing and roll to our up cell.","Tip the Hive by hand. Check that roll flips and our code says which cell is up.","From each preset spot, log cluster range next to the tape-measured distance."],
+    doneAdd:["S: Turret homes the same way 5 starts in a row (motor version)","S: Hive state (which cell is up) is right after 10 hand tips","S: Cluster range within 2 in of the tape at all three spots"],
+    trap:["Trusting a tag while the Hive is still swinging. Wait until it settles."],
+   },
+   "3587":{
+    buildAdd:["Limelight tilted down at the floor, webcam tilted up at the Hive tags, both on adjustable mounts. Check the webcam isn’t blinded by the field lights and the Limelight sees balls at 1–4 ft."],
+    scoringAdd:["Turret servos: measure servo position at 3 known angles and fit servo-to-angle. Do it for each turret."],
+    motionAdd:[
+     "Webcam: use the SDK’s AprilTag cluster support to get the up cell’s pose from its 4 tags. Tip the Hive by hand: the IDs should flip with it.",
+     "Limelight ball pipeline: pollen (yellow) first, then our nectar color. Read tx, ty and size on telemetry.",
+     "Test with alliance tape, red robot panels and shirts in view. Write down every false hit.",
+    ],
+    doneAdd:["S: Webcam says which cell is up, right after 10 hand tips","S: Pollen found at 1, 2 and 3 ft, distance within 2 in of the tape","S: False hits written down and the filters tightened"],
+    trap:["A servo turret that can’t reach the angles you need. Check the range through the gears before writing aim code.","Letting the two cameras fight over USB bandwidth. Test them running together."],
+    learn:["llprog","sdkclusters","tags","llcolor","gm0ctrl"],
+   },
+  }},
+
+ {n:7, start:"2026-11-30", phase:"aim", title:"One-button scoring and auto-aim",
+  goal:"One button aims, spins up and fires up to 4 balls. Cancel always works. Shots land from spots not in the table.",
+  why:"Auto reuses this exact sequence, so it lives in Robot, not in the TeleOp file. Odometry does the aiming; vision only corrects it.",
+  build:[
+   "Integration pass: every sensor, camera and servo mounted, labeled and in the port sheet. Do the final cable audit.",
+   "Driver feedback round 2: fix the top 3 mechanical complaints.",
+   "Pit kit v1: tools, zip ties, thread-lock, spare servos, motors, wheels and belts. Everything has a place.",
+   "List any mechanical change you still want before the scrimmage and decide yes or no by Thursday.",
+  ],
+  motion:["Vision step 4: aim math from Pinpoint. Up cell position on the field minus robot pose gives the turret angle and the distance for the preset.","Corner reset: a driver button that resets the pose when the robot is pushed into a known corner."],
+  scoring:["Scoring sequence state machine in Robot: aim → spin up → feed one at a time → done. Every step has a timeout."],
+  both:["Hand the controller to a driver and watch without helping."],
+  drive:[
+   "Each driver runs 10 full one-button cycles with no help.",
+   "Write the match plan card: Auto, the first 30 seconds of TeleOp, and the endgame. One page.",
+   "Play a cross-team practice match with defense.",
+  ],
+  outreach:[
+   "Judging practice #1: a 3-minute team intro, then questions from a parent or teacher who hasn’t seen the robot.",
+   "Portfolio check: every section has an owner and a date.",
+   "Outreach event or demo day: do it, or put it on the calendar.",
+  ],
+  done:[
+   "B: Final cable audit done and port sheet is current",
+   "B: Mechanical wants list decided",
+   "S: One button fires up to 4 balls",
+   "S: Cancel returns to normal driving",
+   "S: A shot lands from a spot that isn’t a preset",
+   "S: Corner reset puts the pose back within an inch",
+   "S: Manual aim fallback works",
+   "D: Match plan card written",
+   "O: First judging practice done",
+  ],
+  heads:[
+   "A: Scrimmage Dec 12: roster, transport, permission slips, lunch.",
+   "A: Soft freeze Wednesday Dec 9.",
+  ],
+  behind:"Skip the match plan card’s endgame and the demo day. Never skip cancel, the manual fallback, or the corner reset.",
+  ahead:["Run the sequence from the Auto start spots.","Write the pre-match checklist."],
+  sat:"Drive a full 2:30 of random driving, then push into the corner. How far off was the pose before the reset?",
+  trap:["Letting a camera reading move the pose while the Hive is tipping. A wrong fix is worse than a late one.","Adding mechanisms after Thursday. The scrimmage is five days away."],
+  learn:["gm0fsm","pinpoint"],
+  t:{
+   "2827":{
+    buildAdd:["Nectar decision: if nectar is coming back, the mechanical changes have to be decided now. After this week it’s fixes only."],
+    motionAdd:["Vision trim: when the up cell is settled and 2 or more tags are seen, nudge the turret by the cluster bearing. Ignore readings older than about 100 ms."],
+    doneAdd:["S: Bad or old camera data never moves the turret"],
+   },
+   "3587":{
+    buildAdd:["Check that no servo stalls at its limits. A stalled servo cooks itself."],
+    motionAdd:["Which cell is up now comes from the webcam’s tag IDs. Keep a driver button as an override in case the camera is blinded.","Vision trim: when the up cell is settled and 2 or more tags are seen, nudge both turrets by the tag bearing. Ignore readings older than about 100 ms."],
+    scoringAdd:["Fire order: decide whether nectar or pollen goes first, or both at once only if the battery holds up."],
+    doneAdd:["S: Bad or old webcam data never moves a turret"],
+   },
+  }},
+
+ {n:8, start:"2026-12-07", phase:"scrim", title:"Scrimmage week: play full matches",
+  goal:"A robot that plays a whole match: Auto scores preloads and leaves, TeleOp scores, the robot parks at the end.",
+  why:"The scrimmage is the only full rehearsal before the qualifier. Treat it like the real event.",
+  event:"NC scrimmage, planned Sat Dec 12. Confirm the date.",
+  build:[
+   "Run the pre-inspection with a printed checklist and a cardboard 18-inch cube.",
+   "Check the robot signs: at least two, alliance color and team number on each (R401–R403).",
+   "Check that the robot can be removed from the field without power (R203): nothing locked, nothing that needs a battery to roll.",
+   "Soft freeze Wednesday: only fixes after that.",
+   "Pack: pit kit, spares, tools, chargers, batteries, the sizing cube, and a printed copy of the port sheet.",
+  ],
+  motion:["Auto v2: preloads through the real scoring sequence, then leave. Add a time-left check.","Endgame: one button or path to park in the Loading Zone."],
+  scoring:["Driver telemetry: balls held, ready or why not, faults. Six lines at most."],
+  both:["Run 3 full 2:30 practice matches before Saturday. Log every failure.","Tag the release and prove you can build and install it with Wi-Fi off."],
+  drive:[
+   "Three full practice matches before Saturday, each with a pre-match checklist and a different human player.",
+   "At the scrimmage, scout every team in every match. One row per team per match.",
+   "Practice the pre-match routine: who sets up, who checks the config, who says ready.",
+  ],
+  outreach:[
+   "Interview practice with someone from outside the team. Time it; every member answers a question.",
+   "Set up a pit display: team number, a photo, one line per award story.",
+   "Take photos and video at the scrimmage for the notes.",
+  ],
+  done:[
+   "S: Auto scores preloads from every start spot we’ll use",
+   "S: 3 full practice matches run and logged",
+   "D: Scouting sheet used on every scrimmage match",
+   "A: Every failure at the scrimmage written down",
+  ],
+  gate:{name:"Scrimmage Gate", due:"2026-12-09", items:[
+   "B: Pre-inspection passed with the real checklist: 18-inch cube, two robot signs, power switch, battery, motor and servo counts",
+   "B: Robot can be pushed off the field without power (R203)",
+   "B: Pit kit and spares packed; chargers and 4+ labeled batteries",
+   "S: Frozen release tagged and installed with Wi-Fi off",
+   "D: Match plan card, scouting sheet and pre-match checklist are printed",
+   "O: Interview run once, end to end; portfolio draft printed",
+   "A: Roster, transport, permission slips and arrival time are done",
+  ]},
+  heads:[
+   "A: Scrimmage Saturday: arrival time, roster, permission slips, lunch.",
+   "A: Save the scrimmage video. Next week’s fixes come from it.",
+  ],
+  behind:"Cut the pit display and the photos. Never cut the pre-inspection, the offline-install proof, or the three practice matches.",
+  ahead:["Run a fourth practice match with a defender.","Rehearse the interview a second time."],
+  sat:"Scrimmage. Coders and builders watch matches with a notebook: every failure, every slow moment.",
+  trap:["Testing brand-new features at the scrimmage. Bring the frozen release.","Everyone watching the robot and nobody scouting."],
+  learn:["pedro","sdk","rules"],
+ },
+];
+/* ============================================================
+   WEEKS 9–16
+   ============================================================ */
+const WEEKS_B = [
+ {n:9, start:"2026-12-14", phase:"scrim", title:"Fix what the scrimmage showed",
+  goal:"The top 3 scrimmage problems are fixed and a release candidate is tagged Friday Dec 18.",
+  why:"Break is next. A tagged candidate means January starts from something that works, not from half-finished fixes.",
+  build:[
+   "Fix the top 3 mechanical failures from the scrimmage. Retest each one.",
+   "Replace wear items: wheels, belts or chain, servo horns, anything stripped or cracked.",
+   "Rerun the pre-inspection list on the fixed robot.",
+   "Friday: photograph rc1 from every side, with the wiring, and save the hardware list. That’s the “rc1 hardware” reference.",
+  ],
+  motion:["From scrimmage video: Auto points, cycle times, time per shot."],
+  scoring:["From video: shots made and missed, by spot and ball type. Fix the worst one."],
+  both:["Fix the top 3 failures and retest each one.","Friday: tag qualifier-rc1 and save its app file."],
+  drive:[
+   "Watch the scrimmage video together: write the top 3 driver mistakes and drill each one.",
+   "Pre-match checklist v2, from what slowed us down.",
+   "Rank what you saw from other teams. Who would we pick? Who might pick us?",
+  ],
+  outreach:[
+   "Collect judge feedback from the scrimmage, if any was given, into the notes.",
+   "Thank the scrimmage hosts and volunteers.",
+   "Fix the portfolio from interview practice.",
+  ],
+  done:[
+   "B: Top 3 scrimmage mechanical failures fixed and retested",
+   "S: Top 3 scrimmage software failures fixed and retested",
+   "S: Hit rate re-measured after any shooter change",
+   "D: Top 3 driver mistakes drilled",
+   "O: Portfolio has every section drafted",
+  ],
+  gate:{name:"RC1 Gate", due:"2026-12-18", items:[
+   "B: rc1 photos and hardware list are saved",
+   "S: qualifier-rc1 is tagged and its app file is saved",
+   "D: Drivers ran rc1 for one full practice session",
+   "O: Judge and interview feedback is in the notes",
+   "A: Break plan: where the robot lives and who has access",
+  ]},
+  heads:[
+   "A: Winter break: where does the robot live and who has the key? Decide before Friday.",
+   "O: Check the portfolio deadline again. It may land the week after break.",
+  ],
+  behind:"Fix the top 3, not the top 10. If a fix can’t be retested before Friday, don’t ship it in rc1.",
+  ahead:["Drivers run rc1 against a defender.","Start the break reading list."],
+  sat:"Driver practice for the whole session, on rc1.",
+  trap:["“We’ll fix it over break.” Plan as if nobody will.","Retuning everything because one thing was off."],
+  learn:["ftcdocs"],
+  t:{
+   "2827":{motionAdd:["Vision step 5 (only if the top 3 are done): bring Charlotte’s ball-following onto this robot behind a switch that’s off by default."]},
+  }},
+
+ {n:10, start:"2026-12-21", phase:"break", brk:true, title:"Winter break",
+  goal:"Optional. Rest, write the portfolio, or study how top teams play.",
+  why:"Rest is part of the plan. If the lab opens Sat Jan 2, use it for driver practice on rc1.",
+  build:["If the lab opens: install the spares you ordered, but nothing that changes how the robot works."],
+  motion:["Watch three top-team BIOBUZZ matches. Count their cycles and misses."],
+  scoring:["Read one other team’s public BIOBUZZ code. Note one idea for after the qualifier."],
+  both:[],
+  drive:["If the lab opens Sat Jan 2: driver practice on rc1. Two drivers, one human player, one defender."],
+  outreach:["Portfolio writing sprint (remote is fine): finish the first full draft and read it out loud."],
+  done:[
+   "S: Each coder shared one idea from another team",
+   "O: A first full draft of the portfolio exists",
+  ],
+  behind:"There is no behind. Rest.",
+  learn:["pratt"]},
+
+ {n:11, start:"2027-01-04", phase:"qual", title:"Last fixes, then freeze",
+  goal:"Shake off break, run full matches on rc1, fix only what they show, and freeze Friday Jan 8.",
+  why:"A full school week before the qualifier is a gift. Spend it on reliability, not features.",
+  build:[
+   "Full-robot service: re-torque screws and set screws, check every connector and wire, replace worn parts like for like.",
+   "Check battery health: label the best 4, retire any that sag.",
+   "Test every spare servo and motor and put them in the pit kit.",
+   "Mechanical freeze on Friday: after that, repairs only.",
+  ],
+  motion:["Recheck Pedro and Pinpoint after break: run the 10 ft test and one Auto from each start spot."],
+  scoring:["Re-run the shot test from the three spots. Retune only if the hit rate dropped."],
+  both:["Five full practice matches, every failure logged.","Friday: tag the qualifier release and prove an offline build."],
+  drive:[
+   "Five full practice matches with a teammate playing defense.",
+   "Draft the alliance-selection pitch: one page, our strengths in numbers (cycle time, hit rate, Auto).",
+   "Run the pre-match routine until it’s smooth and quiet.",
+  ],
+  outreach:[
+   "Submit the portfolio. Check the deadline and submit on time (A202).",
+   "Two interview run-throughs. Fix the weakest answers.",
+   "Write the award-by-award talk track: one page per award we’re aiming for.",
+  ],
+  done:[
+   "B: Service done and spares tested",
+   "S: Five full practice matches run and logged",
+   "S: Only fixes merged since rc1",
+   "D: Alliance-selection pitch drafted",
+   "O: Portfolio submitted by the deadline",
+  ],
+  gate:{name:"Freeze Gate", due:"2027-01-08", items:[
+   "B: Mechanical freeze: nothing changes but repairs",
+   "B: Batteries labeled; the best four are marked",
+   "S: Qualifier release tagged and offline build proven",
+   "D: Practice matches logged with numbers: cycle time, hit rate, Auto",
+   "O: Two interview run-throughs done",
+   "A: Transport and permission slips for Jan 16",
+  ]},
+  heads:[
+   "O: Portfolio deadline: submit on time.",
+   "A: Transport and permission slips for Jan 16.",
+  ],
+  behind:"Cut the talk-track polish and the second run-through. Never cut the service, the offline build, or the portfolio submission.",
+  ahead:["Run a practice match against a robot you haven’t seen.","Rehearse the alliance pitch out loud."],
+  sat:"Full driver practice. Coders and builders watch and write down anything slow.",
+  trap:["“Just one more feature” because there’s a week left.","Swapping a part that works because a new one looks better."],
+  learn:["sdk"]},
+
+ {n:12, start:"2027-01-11", phase:"qual", title:"Qualifier week: practice, don’t build",
+  goal:"No new mechanisms and no new code. Drivers practice every session, the robot is packed, and you can reinstall offline in five minutes.",
+  why:"At a first qualifier, reliability and driver practice win more matches than features.",
+  event:"NC qualifier, Sat Jan 16.",
+  build:[
+   "Pack: pit kit, spares, batteries, chargers, tools, the sizing cube, robot signs, a printed port sheet and wiring photos.",
+   "Run the pre-inspection list again, on the final robot.",
+   "Repairs only. Anything that breaks gets fixed like for like and retested.",
+  ],
+  motion:["Rehearse rolling back to the last good release."],
+  scoring:["Control Award prep: one page on how our software works. Practice explaining it out loud."],
+  both:["Driver practice every session. Fix only what breaks.","Print the pit checklist. Bring the exported Limelight pipelines."],
+  drive:[
+   "Practice on the final release every session.",
+   "Print the match plan cards and the pre-match checklist: one set per alliance color.",
+   "Scouting: one scout per match with the sheet. Rehearse the alliance pitch.",
+  ],
+  outreach:[
+   "Interview rehearsal twice, with the real robot and the portfolio in the room (A204).",
+   "Finish the pit display.",
+   "Bring a way to write down judge feedback.",
+  ],
+  done:[
+   "S: Release app file saved",
+   "S: A second person can roll back",
+   "S: Pit checklist printed",
+   "O: We practiced explaining our code to judges",
+  ],
+  gate:{name:"Qualifier-Ready Gate", due:"2027-01-15", items:[
+   "B: Packed: pit kit, spares, batteries, signs, the cube",
+   "B: Pre-inspection passed",
+   "S: Exported Limelight pipelines are saved, plus the webcam settings if the team has one",
+   "D: Match plan cards and the pre-match checklist are printed",
+   "O: Pit display and interview materials are ready",
+   "A: Roster, transport and arrival times are confirmed",
+  ]},
+  heads:[
+   "A: Pack list checked by two people.",
+   "O: Judge feedback form or notebook is in the bag.",
+  ],
+  behind:"There’s no behind here: do the gate, practice driving, and leave the rest.",
+  ahead:["Rehearse the full pre-match routine under a timer.","Walk the venue map in the event guide."],
+  sat:"Qualifier day (Sat Jan 16).",
+  trap:["Updating the SDK, Limelight OS or a library this week. Limelight updates can wipe pipelines.","A last-minute mechanical “improvement”."],
+  learn:["sdk","rules"]},
+
+ {n:13, start:"2027-01-18", phase:"post", title:"Debrief with data",
+  goal:"Pick the three improvements that will score the most, using evidence.",
+  why:"After an event, everyone has opinions. Match data settles them.",
+  build:[
+   "Mechanical debrief: every failure and every slow spot, ranked by points lost.",
+   "Pick the top 3 mods. For each write four lines: what, why, how we’ll test it, how we roll it back.",
+  ],
+  motion:["From match video: Auto points, cycle times, time spent driving vs shooting."],
+  scoring:["From match video: shots made and missed, per spot and ball type."],
+  both:["Agree the top three with drivers and builders. Update the design snapshot."],
+  drive:[
+   "Strategy debrief with match data: what scored, and what lost us matches?",
+   "Watch the matches you lost. What happened in the first 30 seconds?",
+  ],
+  outreach:[
+   "Read the judges’ feedback and write what we’ll change (A212: feedback is given to all teams).",
+   "Thank-you notes to volunteers and hosts.",
+   "Update team goals and add the qualifier results to the notes and portfolio.",
+  ],
+  done:[
+   "B: Top 3 mechanical mods are written with a test and a rollback",
+   "S: Match data is in a sheet",
+   "D: Top three improvements agreed with drivers and builders",
+   "O: Judge feedback is in the notes with an action for each point",
+  ],
+  behind:"Skip the thank-yous this week, not next. Don’t skip the data sheet.",
+  ahead:["Start mod #1 on a spare or test copy."],
+  sat:"Rewatch the matches you lost. What happened in the first 30 seconds?",
+  trap:["Changing everything at once.","Debriefing from memory instead of video."],
+  learn:[],
+  t:{
+   "3587":{
+    motionAdd:["Vision step 5: use the Limelight’s ball pipeline to steer the last few feet of a pickup and skip opponent nectar. The camera is already on the floor, so this can start earlier if you’re ahead."],
+    doneAdd:["S: Robot drives to a pollen ball from 3 ft, 8 of 10 times"],
+   },
+  }},
+
+ {n:14, start:"2027-01-25", phase:"post", title:"Auto: one more cycle",
+  goal:"Add a pickup-and-score cycle without making Auto less reliable.",
+  why:"A second Auto cycle is often the biggest point gain after a first event.",
+  build:[
+   "Build mod #1 on a test copy or a spare first. Install it only when it beats the old one on a test.",
+   "Look at the intake and feeder for anything that would make an Auto pickup more reliable.",
+  ],
+  motion:["Pedro path to a pickup area, camera for the last few feet, Pedro back to a shooting spot, inside the time budget."],
+  scoring:["Handle a missed pickup: skip the shot, still leave and park."],
+  both:["10 runs in a row, including deliberately missed pickups."],
+  drive:[
+   "Run the new Auto 10 times and decide which Auto to use with which alliance partner.",
+   "Write a one-line Auto description to share with partners before every match.",
+  ],
+  outreach:[
+   "Add the post-qualifier data pages to the portfolio.",
+   "Outreach event: do it, or book it.",
+  ],
+  done:[
+   "B: Mod #1 is tested and either installed or rejected, with the reason written",
+   "S: New cycle works 8 of 10 times or better",
+   "S: A missed pickup still ends safely",
+   "S: Old Auto kept as a backup option",
+   "D: Auto description for partners is written",
+  ],
+  behind:"Keep the old Auto and ship the new cycle only when it’s ready. Never ship an untested Auto.",
+  ahead:["Try a different start spot for the new cycle."],
+  trap:["Deleting the Auto that worked."],
+  learn:["pedro"]},
+
+ {n:15, start:"2027-02-01", phase:"post", title:"Faster, but only where it pays",
+  goal:"Cut cycle time where the data shows the biggest loss, without losing hit rate.",
+  why:"Now that shots land, speed is worth points. Measure before and after every change.",
+  build:[
+   "Mod #2: only where the data shows the biggest loss (cycle time or jams).",
+   "Re-run the shooter repeatability check after any shooter change.",
+  ],
+  motion:["Faster paths and driving routes from the data."],
+  scoring:["Shorter feed and recovery times. Try shooting while moving only if tests show more points."],
+  both:["Rerun the week 5 shot test after every speed change."],
+  drive:[
+   "Time cycles before and after every change.",
+   "Practice around a defender: getting past, and holding position.",
+  ],
+  outreach:[
+   "Mentor a rookie team or run a demo for a school.",
+   "Post an update on what we changed and why (and add it to an open build thread if you have one).",
+  ],
+  done:[
+   "B: Mod #2 is tested and either installed or rejected, with the reason written",
+   "S: Cycle time measured before and after",
+   "S: Hit rate didn’t drop",
+   "D: Cycle times are in the notes",
+  ],
+  behind:"Drop mod #2. Keep the before-and-after numbers.",
+  ahead:["Test shooting while moving."],
+  trap:["Trading accuracy for speed without noticing."],
+  learn:["gm0ctrl"],
+  t:{
+   "3587":{
+    scoringAdd:["Sensor-based ball counting so the robot stops at 4 and rejects opponent nectar on its own (talk to builders about sensor spots)."],
+    buildAdd:["Find a spot for ball-count sensors that doesn’t block the passive sort."],
+    doneAdd:["S: Ball count right in 20 mixed pickups"],
+   },
+   "2827":{
+    motionAdd:["Traction-mode defense: test a button that locks into traction and holds position."],
+    buildAdd:["Defense check: does traction mode really hold against a push? Test it with a second robot."],
+   },
+  }},
+
+ {n:16, start:"2027-02-08", phase:"post", title:"Driver assist, then freeze again",
+  goal:"Make the drivers faster, then freeze, tag and prove an offline build before the next event.",
+  why:"The best software makes drivers better. Ask them what slows them down, then lock it in.",
+  build:[
+   "Re-inspect, re-service and repack, using the same lists as Weeks 11 and 12.",
+  ],
+  motion:["Aim assist the drivers can hold and release."],
+  scoring:["Rumble or light cue when the shooter is ready."],
+  both:["Repeat the week 11 and 12 checklists: tag, offline build, rollback, pit list."],
+  drive:["Drivers ask for, test and approve every assist. Anything they don’t trust gets cut."],
+  outreach:[
+   "Update the portfolio and the award talk track for the next event.",
+   "Register for the next event, if you haven’t.",
+  ],
+  done:[
+   "B: Re-inspection and service are done",
+   "S: Release tagged and offline build proven",
+   "D: Drivers asked for and approved each change",
+   "O: Portfolio is updated for the next event",
+  ],
+  gate:{name:"Next-Event Gate", due:"2027-02-12", items:[
+   "B: Packed, with the pit kit and spares restocked",
+   "S: Release tagged, offline build proven, rollback rehearsed",
+   "D: Practice matches logged on the final release",
+   "O: Portfolio and talk track updated",
+  ]},
+  behind:"Skip any assist the drivers didn’t ask for.",
+  trap:["Adding features drivers didn’t ask for."],
+  learn:[]},
+];
+
+const WEEKS = WEEKS_A.concat(WEEKS_B);
+/* ============================================================
+   APP
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  if (props) for (const [k, v] of Object.entries(props)) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  kids.flat(Infinity).forEach(c => { if (c == null || c === false) return; e.append(c.nodeType ? c : document.createTextNode(String(c))); });
+  return e;
+}
+
+/* ---------- time ---------- */
+const DAY = 86400000;
+const sod = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const pd = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const fmt = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const fmtLong = d => d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+const qs = new URLSearchParams(location.search);
+const PREVIEW = /^\d{4}-\d{2}-\d{2}$/.test(qs.get("date") || "") ? qs.get("date") : null;
+const TODAY = PREVIEW ? pd(PREVIEW) : sod(new Date());
+const daysTo = d => Math.round((d - TODAY) / DAY);
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const FIRST = pd(WEEKS[0].start);
+const LAST = WEEKS[WEEKS.length - 1];
+const LAST_END = addDays(pd(LAST.start), 6);
+const BEFORE = TODAY < FIRST;
+const AFTER = TODAY > LAST_END;
+let NOWN = 1;
+WEEKS.forEach(w => { if (pd(w.start) <= TODAY) NOWN = w.n; });
+
+const COLS = WEEKS.reduce((n, w) => n + (w.brk ? 2 : 1), 0);
+const startCol = {};
+(() => { let c = 0; WEEKS.forEach(w => { startCol[w.n] = c; c += w.brk ? 2 : 1; }); })();
+const centerPct = w => (startCol[w.n] + (w.brk ? 1 : 0.5)) / COLS * 100;
+const wStart = w => pd(w.start);
+const wEnd = w => addDays(pd(w.start), w.brk ? 13 : 6);
+const phase = id => PHASES.find(p => p.id === id);
+const MS_BY_WEEK = {};
+MILESTONES.forEach(m => { (MS_BY_WEEK[m.week] = MS_BY_WEEK[m.week] || []).push(m); });
+
+/* ---------- storage ---------- */
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const hs = s => { let x = 5381; for (let i = 0; i < s.length; i++) x = ((x << 5) + x + s.charCodeAt(i)) | 0; return (x >>> 0).toString(36); };
+const realISO = () => new Date().toISOString().slice(0, 10);
+
+let team = "2827", role = "all", sel = 1, state = {}, budget = [];
+{
+  const s = LS.get("bb-team", "2827");
+  team = s === "junior" ? "3587" : s === "3587" ? "3587" : "2827";
+  const r = LS.get("bb3-role", "all");
+  role = ["all", "B", "S", "D", "O"].includes(r) ? r : "all";
+}
+const stateKey = () => "bb3-progress-" + team;
+const budgetKey = () => "bb3-budget-" + team;
+function loadState() { try { state = JSON.parse(LS.get(stateKey(), "{}")) || {}; } catch (e) { state = {}; } }
+function saveState() { LS.set(stateKey(), JSON.stringify(state)); }
+function loadBudget() {
+  try { const b = JSON.parse(LS.get(budgetKey(), "null")); budget = Array.isArray(b) ? b : BUDGET[team].map(r => r.slice()); }
+  catch (e) { budget = BUDGET[team].map(r => r.slice()); }
+}
+const saveBudget = () => LS.set(budgetKey(), JSON.stringify(budget));
+
+/* ---------- merge a week with this team's overrides ---------- */
+const KIND_TR = { build: "B", motion: "S", scoring: "S", both: "S", drive: "D", outreach: "O", all: "A", done: "A", heads: "A", ahead: "A" };
+const KIND_ID = { done: "demo" };
+const LIST_KEYS = Object.keys(KIND_TR);
+function mk(arr, tm, k, def) {
+  return (arr || []).map(s => {
+    const m = /^([BSDOA]):\s*([\s\S]*)$/.exec(s);
+    return { tr: m ? m[1] : (def || KIND_TR[k]), t: m ? m[2] : s, tm, kind: KIND_ID[k] || k };
+  });
+}
+function W(w) {
+  const o = (w.t && w.t[team]) || {};
+  const m = Object.assign({}, w);
+  LIST_KEYS.forEach(k => {
+    const base = o[k] ? mk(o[k], team, k) : mk(w[k], null, k);
+    m[k] = mk(o[k + "Pre"], team, k).concat(base, mk(o[k + "Add"], team, k));
+  });
+  m.traps = [].concat(o.trap != null ? o.trap : (w.trap || []));
+  m.learn = o.learn || w.learn || [];
+  m.behind = o.behind || w.behind || "";
+  m.gate = w.gate ? { name: w.gate.name, due: w.gate.due, items: mk(w.gate.items, null, "gate", "A").concat(mk(o.gateAdd, team, "gate", "A")) } : null;
+  return m;
+}
+let WK = [];
+const rebuildWeeks = () => { WK = WEEKS.map(W); };
+
+/* ---------- progress helpers ---------- */
+const iid = (w, it) => `w${w.n}.${it.kind}.${hs(it.t)}`;
+const on = id => !!state[id];
+const vis = it => role === "all" || it.tr === role || it.tr === "A";
+function tally(w, items) { const v = items.filter(vis); return [v.filter(it => on(iid(w, it))).length, v.length]; }
+const demoTally = w => tally(w, w.done);
+const gateTally = w => w.gate ? tally(w, w.gate.items) : [0, 0];
+function overall() {
+  let d = 0, t = 0;
+  WK.forEach(w => { const a = demoTally(w), g = gateTally(w); d += a[0] + g[0]; t += a[1] + g[1]; });
+  return [d, t];
+}
+const gateOverdue = w => w.gate && pd(w.gate.due) < TODAY;
+function weekPast(w) { return !BEFORE && w.n < NOWN; }
+function carryOver() {
+  const out = [];
+  if (BEFORE) return out;
+  WK.forEach(w => {
+    if (w.n < NOWN) w.done.filter(vis).forEach(it => { if (!on(iid(w, it))) out.push({ w, it, label: "demo" }); });
+    if (gateOverdue(w)) w.gate.items.filter(vis).forEach(it => { if (!on(iid(w, it))) out.push({ w, it, label: "gate" }); });
+  });
+  return out.sort((a, b) => a.w.n - b.w.n);
+}
+const weekLate = w => weekPast(w) && (demoTally(w)[0] < demoTally(w)[1] || (gateOverdue(w) && gateTally(w)[0] < gateTally(w)[1]));
+function nextGate() { return WK.find(w => w.gate && pd(w.gate.due) >= TODAY) || null; }
+
+/* ============================================================
+   RENDER: top bar
+   ============================================================ */
+function renderBar() {
+  $$("#teamseg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.team === team)));
+  $$("#roleseg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.role === role)));
+  const [d, t] = overall();
+  $("#overall-text").textContent = `${d} of ${t} checks done`;
+  $("#overall-bar").style.width = (t ? 100 * d / t : 0) + "%";
+}
+
+/* ============================================================
+   RENDER: hero + pizza tracker
+   ============================================================ */
+function stagesList() {
+  const out = [];
+  WEEKS.forEach(w => {
+    const last = out[out.length - 1];
+    if (last && last.phase === w.phase) { last.to = w.n; last.span += w.brk ? 2 : 1; }
+    else out.push({ phase: w.phase, from: w.n, to: w.n, span: w.brk ? 2 : 1, col: startCol[w.n] });
+  });
+  return out;
+}
+function pinPosition() {
+  const cur = WEEKS[NOWN - 1];
+  if (BEFORE) return centerPct(WEEKS[0]);
+  if (AFTER) return centerPct(LAST);
+  const span = cur.brk ? 14 : 7;
+  const frac = Math.min(1, Math.max(0, (Math.round((TODAY - wStart(cur)) / DAY) + 0.5) / span));
+  const colw = 100 / COLS * (cur.brk ? 2 : 1);
+  return centerPct(cur) + (frac - 0.5) * 0.6 * colw;
+}
+
+function renderHero() {
+  const root = $("#hero");
+  const oldScroll = $(".tr-scroll", root);
+  const keep = oldScroll ? oldScroll.scrollLeft : null;
+  root.replaceChildren();
+  const w = WK[NOWN - 1], p = phase(w.phase);
+  const qual = pd(MILESTONES.find(m => m.key === "qual").date);
+  const dq = daysTo(qual);
+  const pct = Math.min(100, Math.max(0, 100 * (TODAY - FIRST) / (qual - FIRST)));
+
+  let sub;
+  if (BEFORE) {
+    const d = daysTo(FIRST);
+    sub = [h("b", null, "Week 1 starts Monday " + fmt(FIRST)), ` (${d === 1 ? "tomorrow" : "in " + plural(d, "day")}). Do the short “Before Monday” list below, then open Week 1.`];
+  } else if (AFTER) {
+    sub = ["The planned season is complete. Use the debrief and improvement weeks again, or add the next event’s plan."];
+  } else if (w.brk) {
+    sub = [h("b", null, p.name), ` · ${fmt(wStart(w))} – ${fmt(wEnd(w))}. Rest, or do the optional list.`];
+  } else {
+    const di = Math.round((TODAY - wStart(w)) / DAY);
+    const demo = di < 3 ? `Demo day is Thursday, in ${plural(3 - di, "day")}.` : di === 3 ? "Today is demo day." : "Demo day has passed. Whatever isn’t ticked carries over.";
+    sub = [h("b", null, p.name), ` · ${fmt(wStart(w))} – ${fmt(wEnd(w))} · ${demo}`];
+  }
+  const shown = BEFORE ? 1 : NOWN;
+  root.append(
+    h("div", { class: "hero-top" },
+      h("div", null,
+        h("div", { class: "label" }, "Trinity Robotics · FTC 2026–27 · BIOBUZZ · Team " + team),
+        h("h1", null, h("span", { class: "wk" }, "Week"), h("span", { class: "big" }, shown), h("span", { class: "of" }, "of " + WEEKS.length)),
+        h("p", { class: "sub" }, sub)),
+      h("div", { class: "hero-side" },
+        h("div", { class: "num" }, dq > 0 ? dq : dq === 0 ? "Today" : Math.abs(dq), h("small", null, dq > 0 ? (dq === 1 ? "day to the qualifier" : "days to the qualifier") : dq === 0 ? "is qualifier day" : "days since the qualifier")),
+        h("div", { class: "bar2", "aria-hidden": "true" }, h("i", { style: `width:${pct}%` })),
+        h("div", { class: "note" }, `${Math.round(pct)}% of the way from Week 1 to the qualifier`))),
+    buildTracker(),
+    buildMiles());
+  const sc = $(".tr-scroll", root);
+  if (sc) {
+    if (keep != null) sc.scrollLeft = keep;
+    else requestAnimationFrame(() => { const inner = $(".tr-inner", sc); sc.scrollLeft = Math.max(0, inner.scrollWidth * pinPosition() / 100 - sc.clientWidth / 2); });
+  }
+}
+
+function buildTracker() {
+  const pin = pinPosition();
+  const stg = stagesList();
+  const cols = `--cols:${COLS}`;
+  const stageRow = h("div", { class: "tr-row tr-stages", style: cols }, stg.map(s => {
+    const ph = phase(s.phase);
+    const st = BEFORE ? "next" : AFTER ? "done" : NOWN > s.to ? "done" : NOWN >= s.from ? "now" : "next";
+    const range = s.from === s.to ? `Wk ${s.from}` : `Wk ${s.from}–${s.to}`;
+    return h("div", { class: "stage " + st, style: `grid-column:span ${s.span};--c:var(${ph.color})` },
+      h("i"), h("div", { class: "sn" }, ph.name), h("div", { class: "ss" }, `${range}${st === "done" ? " · done" : st === "now" ? " · now" : ""}`));
+  }));
+  const cells = h("div", { class: "tr-cells", style: cols }, WK.map(w => {
+    const ph = phase(w.phase);
+    const past = weekPast(w) || (AFTER && w.n <= NOWN);
+    const isNow = !BEFORE && w.n === NOWN && !AFTER;
+    const [dc, dt] = demoTally(w);
+    const cls = ["node", w.brk ? "brk" : "", past ? "past" : "", isNow ? "now" : "", w.n === sel ? "sel" : "", past && dt && dc === dt ? "full" : "", weekLate(w) ? "late" : ""].filter(Boolean).join(" ");
+    const b = h("button", { class: cls, type: "button", style: `--c:var(${ph.color})`, "aria-label": `Week ${w.n}: ${w.title}${isNow ? " (this week)" : ""}`, title: `Week ${w.n}: ${w.title}`, onclick: () => selectWeek(w.n, true) }, w.brk ? "break" : w.n);
+    if (isNow) b.setAttribute("aria-current", "step");
+    return h("div", { class: "nw", style: `grid-column:span ${w.brk ? 2 : 1}` }, isNow ? h("span", { class: "ring" }) : null, b);
+  }));
+  const rail = h("div", { class: "tr-rail", style: `--p:${BEFORE ? 0 : pin}%` },
+    h("div", { class: "tr-fill" }), cells,
+    h("div", { class: "pin", style: `--p:${pin}%` }, h("b", null, BEFORE ? "STARTS MON" : AFTER ? "SEASON DONE" : "YOU ARE HERE")));
+  const dates = h("div", { class: "tr-row tr-dates", style: cols }, WEEKS.map(w => h("div", { class: "d", style: `grid-column:span ${w.brk ? 2 : 1}` }, fmt(wStart(w)))));
+  const flags = h("div", { class: "tr-row tr-flags", style: cols }, WEEKS.map(w => h("div", { class: "f", style: `grid-column:span ${w.brk ? 2 : 1}` },
+    (MS_BY_WEEK[w.n] || []).slice(0, 1).map(m => h("span", { class: "flag " + m.flag[0] }, m.flag[1])))));
+  return h("div", { class: "tracker" },
+    h("div", { class: "tr-head" }, h("div", { class: "label" }, "Season tracker · tap a week"), h("div", { class: "note mono" }, `Today ${fmtLong(TODAY)}`)),
+    h("div", { class: "tr-scroll" }, h("div", { class: "tr-inner", style: `--min:${Math.max(900, COLS * 54)}px` }, stageRow, rail, dates, flags)));
+}
+
+function buildMiles() {
+  const next = MILESTONES.find(m => pd(m.date) >= TODAY);
+  return h("div", { class: "miles" }, MILESTONES.map(m => {
+    const d = pd(m.date), n = daysTo(d), w = WK[m.week - 1];
+    const gw = m.key === "robot" ? WK[1] : m.key === "scrim" ? WK[7] : m.key === "rc1" ? WK[8] : m.key === "freeze" ? WK[10] : WK[11];
+    const [gd, gt] = gateTally(gw);
+    const gName = gw.gate ? gw.gate.name : "";
+    return h("button", { type: "button", class: "mile" + (n < 0 ? " past" : "") + (next && next.key === m.key ? " next" : ""), onclick: () => selectWeek(gw.n, true) },
+      h("span", { class: "mn" }, m.name),
+      h("span", { class: "md" }, fmtLong(d)),
+      h("span", { class: "mc" }, n > 0 ? n : n === 0 ? "Today" : "Done", n > 0 ? h("small", null, n === 1 ? "day" : "days") : null),
+      gt ? h("span", { class: "mg" }, `${gName}: ${gd}/${gt}`) : h("span", { class: "mg" }, " "),
+      gt ? h("span", { class: "mgb" }, h("i", { style: `width:${100 * gd / gt}%` })) : null);
+  }));
+}
+
+/* ============================================================
+   RENDER: rails check + heads-up
+   ============================================================ */
+function chk(w, it, opts) {
+  opts = opts || {};
+  const id = iid(w, it);
+  const cb = h("input", { type: "checkbox", "data-id": id });
+  cb.checked = on(id);
+  cb.addEventListener("change", () => setTick(id, cb.checked));
+  return h("label", { class: "chk", style: `--tc:var(--t-${it.tr})` }, cb,
+    h("span", null,
+      opts.tag ? h("span", { class: "trtag", style: `--tc:var(--t-${it.tr})` }, TRACKS[it.tr].short) : null,
+      it.t,
+      it.tm ? h("em", { class: "tt" }, it.tm) : null));
+}
+
+function renderDash() {
+  const root = $("#dash"); root.replaceChildren();
+  const carry = carryOver();
+  const rl = role === "all" ? "" : ` · ${TRACKS[role].name} track`;
+  let status = "on", title = "On the rails", msg = "Nothing carried over from earlier weeks. Keep ticking this week’s demos.";
+  if (BEFORE) { status = "pre"; title = "Ready to start"; msg = `Week 1 begins Monday ${fmt(FIRST)}. These take about ten minutes, and make Monday’s kickoff easy.`; }
+  else if (carry.length) {
+    const oldest = carry[0].w.n;
+    const gap = NOWN - oldest;
+    if (carry.length <= 3 && gap <= 1) { status = "drift"; title = "Drifting"; msg = `${plural(carry.length, "item")} from earlier weeks ${carry.length === 1 ? "isn’t" : "aren’t"} ticked. Clear ${carry.length === 1 ? "it" : "them"} before starting new work.`; }
+    else { status = "off"; title = "Off the rails"; msg = `${plural(carry.length, "item")} overdue, going back to Week ${oldest}. Say so on Monday, then work the catch-up ladder.`; }
+  }
+  const rails = h("div", { class: "card rails " + status });
+  rails.append(h("div", { class: "st" }, h("span", { class: "dot" }), h("h2", null, title), h("span", { class: "tag" }, "Rails check" + rl)), h("p", { class: "note" }, msg));
+  if (BEFORE) {
+    rails.append(h("div", { class: "carry" }, PRE_ITEMS.filter(vis).map(it => chk(PRE_W, it, { tag: true }))));
+  } else if (carry.length) {
+    const shown = carry.slice(0, 8);
+    rails.append(h("div", { class: "carry" }, shown.map(c => h("div", null, chk(c.w, c.it, { tag: true }),
+      h("button", { class: "btn sm", type: "button", style: "margin:0 0 4px 29px", onclick: () => selectWeek(c.w.n, true) }, `Week ${c.w.n}${c.label === "gate" ? " gate" : ""} →`)))));
+    if (carry.length > shown.length) rails.append(h("p", { class: "note" }, `…and ${carry.length - shown.length} more. Open the older weeks from the tracker.`));
+  }
+  const ng = nextGate();
+  if (ng) {
+    const [gd, gt] = gateTally(ng), dd = daysTo(pd(ng.gate.due));
+    if (gt) rails.append(h("div", { class: "nextgate" },
+      h("div", { class: "ngr" }, h("b", null, "Next gate: " + ng.gate.name), h("span", { class: "mono" }, `${fmtLong(pd(ng.gate.due))} · ${dd > 0 ? plural(dd, "day") : dd === 0 ? "today" : "overdue"}`)),
+      h("div", { class: "gb" }, h("i", { style: `width:${100 * gd / gt}%` })),
+      h("div", { class: "ngr" }, h("span", null, `${gd} of ${gt} ready`), h("button", { class: "btn sm", type: "button", onclick: () => selectWeek(ng.n, true) }, "Open the gate →"))));
+  }
+  const lad = h("details", { class: "ladder" }, h("summary", null, "The catch-up ladder"),
+    h("ol", null,
+      h("li", null, h("b", null, "Carry-over first."), " Unticked demos come before new work, unless the week page says they can be cut."),
+      h("li", null, h("b", null, "Cut from “If you’re behind”."), " Every week names what to drop and what never to drop."),
+      h("li", null, h("b", null, "Borrow people."), " Builders can run drive tests, coders can wire, drivers can build the practice field."),
+      h("li", null, h("b", null, "Protect three things:"), " drivers’ time on the robot, the next gate, and a release that installs offline.")));
+  rails.append(lad);
+  root.append(rails);
+
+  // heads-up
+  const lo = BEFORE ? 1 : NOWN, hi = lo + 2;
+  const rows = [];
+  WK.forEach(w => w.heads.filter(vis).forEach(it => {
+    const done = on(iid(w, it));
+    const over = weekPast(w) && !done;
+    if (over || (w.n >= lo && w.n <= hi)) rows.push({ w, it, over });
+  }));
+  rows.sort((a, b) => (b.over - a.over) || (a.w.n - b.w.n));
+  const open = rows.filter(r => !on(iid(r.w, r.it))).length;
+  root.append(h("div", { class: "card heads" },
+    h("h3", null, "Heads-up: don’t forget", h("span", { class: "pill" + (open ? "" : " full") }, open ? `${open} open` : "all clear")),
+    h("p", { class: "note" }, "Things with lead time: orders, registrations, deadlines, logistics. Showing this week and the next two."),
+    h("div", { class: "hl" }, rows.length ? rows.map(r => h("div", { class: r.over ? "over" : "" }, chk(r.w, r.it, { tag: true }), h("span", { class: "wkb2", style: "margin:-2px 0 4px 29px;display:block" }, r.over ? `Week ${r.w.n} · overdue` : `Week ${r.w.n}`))) : h("p", { class: "empty" }, "Nothing with lead time in the next three weeks."))));
+}
+const PRE_W = { n: 0 };
+const PRE_ITEMS = mk(PRE, null, "all");
+
+/* ============================================================
+   RENDER: the week view
+   ============================================================ */
+let counters = [];
+function renderWeek() {
+  const w = WK[sel - 1], p = phase(w.phase);
+  const root = $("#weekview");
+  root.replaceChildren(); counters = [];
+  root.style.setProperty("--c", `var(${p.color})`);
+  const tagText = BEFORE ? (w.n === 1 ? "Up next" : "Ahead") : AFTER ? "Past" : w.n < NOWN ? "Past" : w.n === NOWN ? "This week" : "Ahead";
+  const tagCls = tagText === "This week" || tagText === "Up next" ? "now" : tagText === "Past" ? "past" : "ahead";
+
+  root.append(h("div", { class: "wv-nav" },
+    h("div", { class: "pos" }, h("span", { class: "label" }, `Viewing week ${w.n} of ${WK.length}`), h("span", { class: "tag " + tagCls }, tagText),
+      sel !== (BEFORE ? 1 : NOWN) ? h("button", { class: "btn sm", type: "button", onclick: () => selectWeek(BEFORE ? 1 : NOWN) }, BEFORE ? "Back to Week 1" : "Back to this week") : null),
+    h("select", { "aria-label": "Jump to a week", onchange: e => selectWeek(+e.target.value) }, WK.map(x => h("option", { value: x.n, selected: x.n === sel }, `Week ${x.n}: ${x.title}`))),
+    sel > 1 ? h("button", { class: "btn", type: "button", onclick: () => selectWeek(sel - 1) }, "← Week " + (sel - 1)) : null,
+    sel < WK.length ? h("button", { class: "btn", type: "button", onclick: () => selectWeek(sel + 1) }, "Week " + (sel + 1) + " →") : null));
+
+  root.append(h("header", { class: "wv-head" + (w.brk ? " brk" : "") },
+    h("div", { class: "big", "aria-hidden": "true" }, w.n),
+    h("div", null,
+      h("div", { class: "label" }, `${fmt(wStart(w))} – ${fmt(wEnd(w))} · ${p.name}${w.short ? " · " + w.short : ""}`),
+      h("h2", null, w.title),
+      h("p", { class: "goal" }, w.goal))));
+  root.append(h("p", { class: "why" }, h("b", null, "Why this week: "), w.why));
+  if (w.event) root.append(h("div", { class: "event" }, h("b", null, "On the calendar: "), w.event));
+
+  // tracks
+  const tracks = h("div", { class: "tracks" });
+  const card = (code, bodyEls, items, wide) => {
+    const focus = role === "all" || role === code;
+    const d = h("details", { class: "trk" + (wide ? " wide" : "") + (focus ? "" : " dim"), style: `--tc:var(--t-${code})` });
+    d.open = focus;
+    const pill = h("span", { class: "pill" });
+    counters.push(() => { const c = items.filter(it => on(iid(w, it))).length; pill.textContent = items.length ? `${c}/${items.length}` : "–"; pill.classList.toggle("full", items.length > 0 && c === items.length); });
+    d.append(h("summary", null, h("h3", null, TRACKS[code].name, h("small", null, TRACKS[code].sub)), pill), h("div", { class: "tb" }, bodyEls));
+    return d;
+  };
+  const list = items => items.length ? items.map(it => chk(w, it)) : [h("p", { class: "empty" }, "Nothing new this week.")];
+  tracks.append(card("B", list(w.build), w.build));
+  tracks.append(card("D", list(w.drive), w.drive));
+  const lane = (title, cls, items) => h("div", { class: "box" }, h("h4", null, h("span", { class: "lane-chip " + cls }, title)), items.length ? items.map(it => chk(w, it)) : h("p", { class: "empty" }, "Nothing new this week."));
+  const sw = [h("div", { class: "lanes" }, lane("Motion", "chip-motion", w.motion), lane("Scoring", "chip-scoring", w.scoring))];
+  if (w.both.length) sw.push(lane("Both", "chip-both", w.both));
+  tracks.append(card("S", sw, w.motion.concat(w.scoring, w.both), true));
+  tracks.append(card("O", list(w.outreach), w.outreach, !w.all.length));
+  if (w.all.length) tracks.append(card("A", list(w.all), w.all));
+  root.append(tracks);
+
+  // demo + gate
+  const demos = w.done.filter(vis);
+  const dpill = h("span", { class: "pill" });
+  counters.push(() => { const [c, t] = demoTally(w); dpill.textContent = `${c}/${t}`; dpill.classList.toggle("full", t > 0 && c === t); dpill.classList.toggle("late", weekLate(w)); });
+  const demoCard = h("section", { class: "card demo" },
+    h("div", { class: "gh", style: "display:flex;justify-content:space-between;align-items:baseline;gap:8px" }, h("div", { class: "label" }, w.brk ? "Optional · tick what you did" : "Thursday demo · done when · tick only what you showed"), dpill),
+    h("div", { style: "margin-top:8px" }, demos.length ? demos.map(it => chk(w, it, { tag: true })) : h("p", { class: "empty" }, "No demo items for this track this week.")));
+  const two = h("div", { class: "two" + (w.gate ? "" : " one") }, demoCard);
+  if (w.gate) {
+    const gi = w.gate.items.filter(vis);
+    const gbar = h("i"), gct = h("span", { class: "pill" });
+    counters.push(() => { const [c, t] = gateTally(w); gct.textContent = `${c}/${t}`; gct.classList.toggle("full", t > 0 && c === t); gbar.style.width = (t ? 100 * c / t : 0) + "%"; });
+    const dd = daysTo(pd(w.gate.due));
+    two.append(h("section", { class: "card gate" },
+      h("div", { class: "gh" }, h("h3", null, "Gate: " + w.gate.name), h("span", { class: "gdue" }, `due ${fmtLong(pd(w.gate.due))} · ${dd > 0 ? plural(dd, "day") + " away" : dd === 0 ? "today" : "was " + plural(-dd, "day") + " ago"}`)),
+      h("p", { class: "note" }, "A gate is a checkpoint across every track. Nobody’s done until the gate is."),
+      h("div", { class: "gbar" }, gbar),
+      h("div", null, gi.length ? gi.map(it => chk(w, it, { tag: true })) : h("p", { class: "empty" }, "No gate items for this track.")),
+      h("div", { style: "margin-top:6px" }, gct)));
+  }
+  root.append(two);
+
+  // heads-up for this week
+  const hd = w.heads.filter(vis);
+  if (hd.length) root.append(h("section", { class: "card", style: "margin-top:14px" }, h("h3", null, "Don’t forget this week"), h("div", null, hd.map(it => chk(w, it, { tag: true })))));
+
+  // notes
+  const notes = h("div", { class: "notes" });
+  if (w.behind) notes.append(h("section", { class: "card behind" }, h("h3", null, "If you’re behind"), h("p", { class: "note" }, w.behind)));
+  if (w.ahead.length) notes.append(h("section", { class: "card ahead" }, h("h3", null, "If you’re ahead"), h("ul", { class: "plain" }, w.ahead.map(a => h("li", null, a.t, a.tm ? h("em", { class: "tt" }, a.tm) : null)))));
+  if (w.sat) notes.append(h("section", { class: "card" }, h("h3", null, "Saturday"), h("p", { class: "note" }, w.sat)));
+  if (w.traps.length) notes.append(h("section", { class: "card trap" }, h("h3", null, "Watch out"), h("ul", { class: "plain" }, w.traps.map(t => h("li", null, t)))));
+  if (notes.children.length) root.append(notes);
+
+  if (w.learn.length) root.append(h("section", { style: "margin-top:14px" }, h("div", { class: "label", style: "margin-bottom:8px" }, "Learn and research"),
+    h("div", { class: "learn" }, w.learn.map(k => { const [label, url] = LINKS[k]; return h("a", { href: url, target: "_blank", rel: "noopener" }, label); }))));
+
+  const msg = h("span", { class: "copied", "aria-live": "polite" });
+  root.append(h("div", { class: "row-actions" },
+    h("button", { class: "btn", type: "button", onclick: async () => {
+      const text = statusText(w);
+      try { await navigator.clipboard.writeText(text); msg.textContent = "Copied"; }
+      catch (e) { const ta = h("textarea", { rows: 8, style: "width:100%" }); ta.value = text; root.append(ta); ta.select(); msg.textContent = "Select and copy the text below"; }
+      setTimeout(() => { msg.textContent = ""; }, 3000);
+    } }, "Copy status for team chat"),
+    h("button", { class: "btn", type: "button", onclick: () => window.print() }, "Print this week"), msg));
+  updateCounters();
+}
+const updateCounters = () => counters.forEach(f => f());
+
+function statusText(w) {
+  const mark = it => on(iid(w, it)) ? "[x]" : "[ ]";
+  const demos = w.done.filter(vis), [c, t] = demoTally(w);
+  const lines = [`Team ${team} · Week ${w.n}: ${w.title} (${c}/${t} demos${role === "all" ? "" : ", " + TRACKS[role].short + " track"})`];
+  demos.forEach(it => lines.push(`${mark(it)} [${TRACKS[it.tr].short}] ${it.t}`));
+  if (w.gate) {
+    const [gc, gt] = gateTally(w);
+    lines.push("", `${w.gate.name} (due ${fmtLong(pd(w.gate.due))}): ${gc}/${gt}`);
+    w.gate.items.filter(vis).forEach(it => lines.push(`${mark(it)} [${TRACKS[it.tr].short}] ${it.t}`));
+  }
+  const carry = carryOver();
+  if (carry.length) lines.push("", `Carried over: ${carry.length} (oldest from Week ${carry[0].w.n})`);
+  return lines.join("\n");
+}
+
+/* ============================================================
+   RENDER: robot snapshot, budget, vision
+   ============================================================ */
+function renderSnapshot() {
+  const t = TEAMS[team];
+  $("#snap-title").textContent = `Team ${team}: the robot as designed today`;
+  const c = $("#teamcard"); c.replaceChildren();
+  c.append(h("h3", null, `Team ${team}’s robot`), h("p", { style: "margin-bottom:10px" }, h("b", null, "Plan: "), t.plan),
+    h("ul", { class: "facts" }, t.facts.map(([k, v]) => h("li", null, h("b", null, k), h("span", null, v)))),
+    h("div", { class: "sub-h" }, h("div", { class: "label" }, "Build watch-list: what’s most likely to bite"), h("ul", null, t.risks.map(r => h("li", null, r)))),
+    h("div", { class: "sub-h" }, h("div", { class: "label" }, "If the design changes"), h("ul", null, t.changes.map(r => h("li", null, r)))),
+    h("a", { class: "doc", href: SNAPSHOT[team], target: "_blank", rel: "noopener" }, `Open the ${team} design snapshot ↗`));
+  const vs = $("#vsteps"); vs.replaceChildren();
+  VISION.forEach(([name, text, wk]) => {
+    const n = typeof wk === "number" ? wk : wk[team];
+    vs.append(h("li", null, h("div", null, h("b", null, name + ". "), typeof text === "string" ? text : text[team], h("span", { class: "wkref" }, ` · week ${n}`))));
+  });
+  $("#vnote").textContent = VISION_NOTE[team];
+}
+
+function renderBudget() {
+  const root = $("#budget"); root.replaceChildren();
+  const totals = h("div", { class: "bud-tot" });
+  const tm = h("div", { class: "bt" }), ts = h("div", { class: "bt" });
+  totals.append(tm, ts);
+  const tbody = h("tbody");
+  const upd = () => {
+    const m = budget.reduce((n, r) => n + (+r[1] || 0), 0), s = budget.reduce((n, r) => n + (+r[2] || 0), 0);
+    [[tm, "Motors", m], [ts, "Servos", s]].forEach(([el, name, v]) => {
+      el.className = "bt" + (v > 8 ? " over" : v === 8 ? " full" : "");
+      el.replaceChildren(h("div", { class: "label" }, name), h("div", { class: "v" }, `${v} / 8`), h("div", { class: "b" }, h("i", { style: `width:${Math.min(100, v / 8 * 100)}%` })),
+        h("div", { class: "note", style: "font-size:12.5px;margin-top:3px" }, v > 8 ? `${v - 8} over the limit` : v === 8 ? "At the limit" : `${8 - v} left`));
+    });
+  };
+  const rows = () => {
+    tbody.replaceChildren();
+    budget.forEach((r, i) => {
+      const mk_ = (idx) => { const inp = h("input", { type: "number", min: 0, max: 8, value: r[idx], "aria-label": (idx === 1 ? "Motors for " : "Servos for ") + r[0] }); inp.addEventListener("input", () => { r[idx] = Math.max(0, +inp.value || 0); saveBudget(); upd(); }); return inp; };
+      const name = h("input", { type: "text", value: r[0], "aria-label": "Mechanism name" }); name.addEventListener("input", () => { r[0] = name.value; saveBudget(); });
+      tbody.append(h("tr", null, h("td", null, name), h("td", null, mk_(1)), h("td", null, mk_(2)),
+        h("td", null, h("button", { class: "x", type: "button", "aria-label": "Remove " + r[0], onclick: () => { budget.splice(i, 1); saveBudget(); rows(); upd(); } }, "×"))));
+    });
+  };
+  root.append(h("h3", null, "Motor and servo budget"),
+    h("p", { class: "note" }, "R503 allows 8 motors and 8 servos. The starter numbers are guesses from the snapshot: correct them, and add a row before any new mechanism."),
+    totals,
+    h("table", null, h("thead", null, h("tr", null, h("th", null, "Mechanism"), h("th", null, "Motors"), h("th", null, "Servos"), h("th", null, h("span", { class: "sr" }, "Remove")))), tbody),
+    h("div", { class: "row-actions" }, h("button", { class: "btn sm", type: "button", onclick: () => { budget.push(["New mechanism", 0, 0]); saveBudget(); rows(); upd(); } }, "+ Add a mechanism"),
+      h("button", { class: "btn sm", type: "button", onclick: () => { budget = BUDGET[team].map(r => r.slice()); saveBudget(); renderBudget(); } }, "Reset to starter")),
+    team === "3587" ? h("p", { class: "note", style: "margin-top:10px" }, "USB ports are for vision devices (R707). The Limelight and the webcam are the two this plan uses.") : null);
+  rows(); upd();
+}
+
+/* ============================================================
+   RENDER: season outline
+   ============================================================ */
+function renderOutline() {
+  const root = $("#phases"); root.replaceChildren();
+  PHASES.forEach(p => {
+    const ws = WK.filter(w => w.phase === p.id); if (!ws.length) return;
+    const rows = h("div", { class: "rows" }, ws.map(w => {
+      const [dc, dt] = demoTally(w), [gc, gt] = gateTally(w);
+      const isNow = !BEFORE && w.n === NOWN;
+      const late = weekLate(w);
+      return h("button", { type: "button", class: "row" + (w.brk ? " brk" : "") + (isNow ? " now" : "") + (w.n === sel ? " sel" : ""), style: `--c:var(${p.color})`, onclick: () => selectWeek(w.n, true) },
+        h("div", { class: "n", "aria-hidden": "true" }, w.n),
+        h("div", null, h("div", { class: "d" }, `Week ${w.n} · ${fmt(wStart(w))} – ${fmt(wEnd(w))}${w.short ? " · " + w.short : ""}${isNow ? " · this week" : ""}`), h("div", { class: "t" }, w.title), h("div", { class: "g" }, w.goal)),
+        h("div", { class: "pp" },
+          gt ? h("span", { class: "pill" + (gc === gt ? " full" : "") }, `Gate ${gc}/${gt}`) : null,
+          h("span", { class: "pill" + (dt && dc === dt ? " full" : late ? " late" : "") }, `${dc}/${dt} demos`)));
+    }));
+    root.append(h("div", { class: "ph", style: `--c:var(${p.color})` }, h("div", { class: "ph-h" }, h("div", { class: "sw" }), h("div", null, h("h3", null, p.name), h("p", null, p.blurb))), rows));
+  });
+}
+
+/* ============================================================
+   Actions
+   ============================================================ */
+function setTick(id, v) { if (v) state[id] = realISO(); else delete state[id]; saveState(); updateLive(); }
+function syncChecks() { $$("input[data-id]").forEach(cb => { cb.checked = on(cb.dataset.id); }); }
+function updateLive() {
+  const a = document.activeElement, id = a && a.dataset && a.dataset.id;
+  syncChecks(); renderBar(); renderHero(); renderDash(); renderOutline(); updateCounters();
+  if (id && a.closest && a.closest("#dash")) { const el = $(`#dash input[data-id="${CSS.escape(id)}"]`); if (el) el.focus(); }
+}
+function selectWeek(n, scroll) {
+  sel = Math.max(1, Math.min(WK.length, n));
+  try { history.replaceState(null, "", location.pathname + location.search + "#week-" + sel); } catch (e) {}
+  renderWeek(); renderHero(); renderOutline();
+  if (scroll) $("#weekview").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+}
+function setTeam(t) {
+  team = t; LS.set("bb-team", t);
+  loadState(); loadBudget(); rebuildWeeks(); renderAll();
+}
+function setRole(r) { role = r; LS.set("bb3-role", r); renderAll(); }
+function renderAll() { renderBar(); renderHero(); renderDash(); renderWeek(); renderSnapshot(); renderBudget(); renderOutline(); }
+
+/* ---------- footer tools ---------- */
+function toolMsg(t) { const m = $("#toolmsg"); m.textContent = t; setTimeout(() => { m.textContent = ""; }, 3500); }
+$("#export").addEventListener("click", async () => {
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, team, state, budget }))));
+  try { await navigator.clipboard.writeText(code); toolMsg("Progress code copied"); }
+  catch (e) { $("#importbox").hidden = false; $("#importtext").value = code; $("#importtext").select(); toolMsg("Copy the code from the box"); }
+});
+$("#import").addEventListener("click", () => { const b = $("#importbox"); b.hidden = !b.hidden; if (!b.hidden) $("#importtext").focus(); });
+$("#importgo").addEventListener("click", () => {
+  try {
+    const d = JSON.parse(decodeURIComponent(escape(atob($("#importtext").value.trim()))));
+    if (!d || !["2827", "3587"].includes(d.team)) throw new Error("bad");
+    const key = "bb3-progress-" + d.team;
+    let cur = {}; try { cur = JSON.parse(LS.get(key, "{}")) || {}; } catch (e) {}
+    LS.set(key, JSON.stringify(Object.assign({}, cur, d.state || {})));
+    if (Array.isArray(d.budget)) LS.set("bb3-budget-" + d.team, JSON.stringify(d.budget));
+    $("#importbox").hidden = true; $("#importtext").value = "";
+    setTeam(d.team); toolMsg(`Loaded progress for team ${d.team}`);
+  } catch (e) { toolMsg("That code didn’t work. Copy it again in full."); }
+});
+$("#reset").addEventListener("click", () => {
+  if (!confirm(`Clear every check for team ${team} in this browser?`)) return;
+  state = {}; saveState(); updateLive(); toolMsg("Cleared");
+});
+$("#previewdate").addEventListener("change", e => { if (e.target.value) location.search = "?date=" + e.target.value + location.hash; });
+
+$$("#teamseg button").forEach(b => b.addEventListener("click", () => setTeam(b.dataset.team)));
+$$("#roleseg button").forEach(b => b.addEventListener("click", () => setRole(b.dataset.role)));
+window.addEventListener("hashchange", () => { const m = /^#week-(\d+)$/.exec(location.hash); if (m && +m[1] !== sel) selectWeek(+m[1], true); });
+
+/* ---------- go ---------- */
+if (PREVIEW) {
+  const pv = $("#preview"); pv.hidden = false;
+  $(".wrap", pv).append(h("span", null, `Previewing the plan as if today is ${fmtLong(TODAY)}.`), h("a", { href: location.pathname + location.hash }, "Back to today"));
+  $("#previewdate").value = PREVIEW;
+}
+{
+  const m = /^#week-(\d+)$/.exec(location.hash);
+  sel = m ? Math.max(1, Math.min(WEEKS.length, +m[1])) : (BEFORE ? 1 : NOWN);
+}
+setTeam(team);
+</script>
+</body>
+</html>
