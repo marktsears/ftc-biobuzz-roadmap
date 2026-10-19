@@ -151,10 +151,10 @@ export function MeCard() {
   if (!person)
     return (
       <div className="card mecard empty-me">
-        <h3>Who’s buzzing?</h3>
-        <p className="note">Add your name to earn XP, grab tasks and collect badges.</p>
+        <h3>Sign in</h3>
+        <p className="note">Use your Trinity Google account to grab tasks and earn XP.</p>
         <button type="button" className="btn" onClick={openProfile}>
-          Add my name
+          Sign in
         </button>
       </div>
     );

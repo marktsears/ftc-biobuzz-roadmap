@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { applyOp } from "@/lib/apply";
 import { demoTally, gateTally } from "@/lib/progress";
@@ -7,7 +8,7 @@ import { EMPTY_STATE, TEAM_IDS, type BudgetRow, type Focus, type RemoteState, ty
 import { pd, sod } from "@/lib/time";
 import { clockOf, getIndex, getWeeks, type Clock } from "@/lib/weeks";
 import { QUEST_BY_ID, questXp } from "@/lib/data/quests";
-import { BADGES, XP, badgesOf, computePeople, hiveLevel, nameKey, normName, personalLevel, type Person } from "@/lib/xp";
+import { computePeople, nameKey, normName, personalLevel, type Person } from "@/lib/xp";
 import type { Week } from "@/lib/types";
 
 export type ToastKind = "xp" | "level" | "badge" | "cheer" | "error" | "info";
@@ -23,7 +24,7 @@ export interface App {
   team: TeamId;
   setTeam: (t: TeamId) => void;
   person: string;
-  setPerson: (n: string) => void;
+  email: string;
   focus: Focus;
   setFocus: (f: Focus) => void;
   code: string;
@@ -93,9 +94,11 @@ const POLL_MS = 20000;
 let toastSeq = 1;
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const [booted, setBooted] = useState(false);
+  const { data: session, status } = useSession();
+  const person = status === "authenticated" ? normName(session?.user?.name || "") : "";
+  const email = status === "authenticated" ? session?.user?.email || "" : "";
   const [team, setTeamS] = useState<TeamId>("2827");
-  const [person, setPersonS] = useState("");
   const [focus, setFocusS] = useState<Focus>("all");
   const [code, setCodeS] = useState("");
   const [todayD, setTodayD] = useState<Date>(() => pd("2026-10-19")); // fixed for SSR; the real date is set on mount
@@ -118,8 +121,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const t = LS.get("tr-team");
     if (t && (TEAM_IDS as string[]).includes(t)) setTeamS(t as TeamId);
-    const p = normName(LS.get("tr-person") || "");
-    setPersonS(p);
     const f = LS.get("tr-focus");
     if (f && ["all", "B", "S", "D", "O"].includes(f)) setFocusS(f as Focus);
     setCodeS(LS.get("tr-code") || "");
@@ -136,11 +137,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPreviewS(pv);
       setTodayD(pd(pv));
     } else setTodayD(sod(new Date()));
-    setReady(true);
-    if (!p && !LS.get("tr-welcomed")) {
-      LS.set("tr-welcomed", "1");
-      setProfileOpen(true);
-    }
+    setBooted(true);
   }, []);
 
   /* ----- keep "today" fresh while the tab stays open ----- */
@@ -189,13 +186,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!booted) return;
     setState({ ...EMPTY_STATE });
     void load(team, true);
-  }, [team, ready, load]);
+  }, [team, booted, load]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!booted) return;
     const poll = () => {
       if (document.visibilityState === "visible" && pending.current === 0) void load(team);
     };
@@ -205,7 +202,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       clearInterval(id);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [team, ready, load]);
+  }, [team, booted, load]);
 
   /* ----- derived: people, XP, me ----- */
   const people = useMemo(() => computePeople(state, team, clock.now), [state, team, clock.now]);
@@ -217,7 +214,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async (op: WriteOp) => {
       if (!person) {
         setProfileOpen(true);
-        toast("info", "Add your name first", "So the team knows who did what.");
+        toast("info", "Sign in first", "Use your Trinity Google account.");
         return;
       }
       if (loadingRef.current) {
@@ -242,7 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const r = await fetch("/api/state", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ team, name: person, code, ...op }),
+          body: JSON.stringify({ team, code, ...op }),
         });
         const data = (await r.json().catch(() => ({}))) as RemoteState & { error?: string };
         if (!r.ok) throw new Error(data.error || "Couldn’t save");
@@ -271,24 +268,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!after) return;
     const xpB = before?.xp ?? 0;
     const gain = after.xp - xpB;
-    if (op.op === "check" && op.on && gain > 0) toast("xp", `+${gain} XP`);
-    if (op.op === "quest" && op.on) toast("xp", `+${questXp(QUEST_BY_ID[op.quest])} XP`, "Quest complete");
-    if (op.op === "claim" && op.on) toast("info", "It’s yours", "Tick it off when it’s done for +" + XP.claimBonus + " bonus XP.");
-
     const lb = personalLevel(xpB);
     const la = personalLevel(after.xp);
-    if (la.idx > lb.idx) toast("level", `Level up: ${la.name}`, "Nice work.");
-
-    const had = new Set(badgesOf(before));
-    for (const id of badgesOf(after)) {
-      if (!had.has(id)) {
-        const b = BADGES.find(x => x.id === id)!;
-        toast("badge", `Badge: ${b.name}`, b.desc);
-      }
+    if (la.idx > lb.idx) {
+      toast("level", `Level up: ${la.name}`, "Nice work.");
+    } else if (op.op === "quest" && op.on) {
+      toast("xp", `+${questXp(QUEST_BY_ID[op.quest])} XP`, "Quest complete");
+    } else if (op.op === "check" && op.on && gain > 0) {
+      toast("xp", `+${gain} XP`);
+    } else if (op.op === "claim" && op.on) {
+      toast("info", "It’s yours", "Tick it off when it’s done.");
     }
-    const hb = hiveLevel(computePeople(prev, team, clock.now).reduce((n, p) => n + p.xp, 0), team);
-    const ha = hiveLevel(computePeople(next, team, clock.now).reduce((n, p) => n + p.xp, 0), team);
-    if (ha.idx > hb.idx) toast("cheer", `The hive grew: ${ha.name}`, "That’s all of you.");
 
     if (op.op === "check" && op.on) {
       const e = getIndex(team).get(op.id);
@@ -305,18 +295,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const value: App = {
-    ready,
+    ready: booted && status !== "loading",
     team,
     setTeam: t => {
       LS.set("tr-team", t);
       setTeamS(t);
     },
     person,
-    setPerson: n => {
-      const v = normName(n);
-      LS.set("tr-person", v);
-      setPersonS(v);
-    },
+    email,
     focus,
     setFocus: f => {
       LS.set("tr-focus", f);

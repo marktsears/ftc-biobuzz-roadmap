@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { QUEST_BY_ID } from "@/lib/data/quests";
+import { isTrinityAccount } from "@/lib/identity";
 import { getStore, teamCode } from "@/lib/store";
 import { TEAM_IDS, type BudgetRow, type RemoteState, type TeamId, type WriteOp } from "@/lib/types";
 import { getIndex, isTaskKind } from "@/lib/weeks";
@@ -57,8 +59,11 @@ export async function POST(req: Request) {
   const need = teamCode();
   if (need && String(body.code ?? "").trim() !== need) return json({ error: "Wrong team code" }, 401);
 
-  const name = normName(String(body.name ?? ""));
-  if (!name || name.length > NAME_MAX) return json({ error: "Add your name first" }, 400);
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!session?.user || !isTrinityAccount(email)) return json({ error: "Sign in with your Trinity Google account" }, 401);
+  const name = normName(session.user.name || "");
+  if (!name || name.length > NAME_MAX) return json({ error: "Sign in with your Trinity Google account" }, 401);
 
   const op = body.op as WriteOp["op"];
   try {

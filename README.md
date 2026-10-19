@@ -1,7 +1,7 @@
 # Trinity Robotics · BIOBUZZ Rails
 
 A season guide and progress tracker for Trinity Robotics FTC teams **2827** and **3587** (2026–27, BIOBUZZ).
-It's a Next.js app, built to be hosted on Vercel. There are no logins.
+It's a Next.js app, hosted on Vercel. Students sign in with their Trinity Google account (`@tsdch.org`).
 
 - **Home**: "Week N of 16", a pizza-tracker of the season, your next moves, and a "Not sure what to do? Bored?" panel.
 - **Week**: the plan for each week (Build, Software, Drive, Outreach, Demo and Gate), with tickable tasks, "if you're behind" guidance and traps.
@@ -20,10 +20,20 @@ npm run build
 
 Preview any date, to see the app mid-season: `http://localhost:3000/?date=2026-11-18`.
 
-## How state is stored (no accounts)
+## Sign in
 
-People pick a name on first visit (saved in their browser). Ticks, claims, finished quests and the budget table are shared per team, with
-"done by" shown. The storage is chosen automatically:
+Google sign-in is limited to the Trinity School Workspace domain (`tsdch.org`, including subdomains). The name on a tick comes from the Google account, not from something typed in.
+
+1. In Google Cloud, create an OAuth client of type **Web application**.
+2. Add the redirect URIs in `.env.example`.
+3. Set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in Vercel (and in `.env.local` for local testing).
+4. If a student sees “admin approval required”, a Trinity Workspace admin has to allow the app once.
+
+The season plan can be read without signing in. Ticking, grabbing, and finishing a quest require a Trinity account.
+
+## How state is stored
+
+Ticks, claims, finished quests and the budget table are shared per team, with "done by" shown. The storage is chosen automatically:
 
 | Situation | Storage |
 | --- | --- |

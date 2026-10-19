@@ -4,12 +4,10 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useApp } from "./AppProvider";
 import { BoredBanner } from "./QuestCard";
-import { HeadsUp, RailsCard } from "./Rails";
-import { ActivityFeed, HiveMini, MeCard, PaceCard, TrackRings } from "./Social";
 import { Task } from "./Task";
 import { Tracker } from "./Tracker";
 import { Cta, Shapes } from "./ui";
-import { daysTo } from "@/lib/progress";
+import { PACE_COPY, daysTo, pace } from "@/lib/progress";
 import { myTasks, openTasks } from "@/lib/pick";
 import { fmt, pd, plural } from "@/lib/time";
 import { phaseOf, qualifier, wEnd, wStart } from "@/lib/weeks";
@@ -83,8 +81,8 @@ export function Hero() {
 
 function NextMoves() {
   const { weeks, state, person, focus, clock, openProfile } = useApp();
-  const mine = useMemo(() => myTasks(weeks, state, person), [weeks, state, person]);
-  const open = useMemo(() => openTasks(weeks, state, focus, clock).slice(0, mine.length >= 3 ? 0 : 4 - Math.min(mine.length, 2)), [weeks, state, focus, clock, mine.length]);
+  const mine = useMemo(() => myTasks(weeks, state, person).slice(0, 3), [weeks, state, person]);
+  const open = useMemo(() => openTasks(weeks, state, focus, clock).slice(0, Math.max(0, 3 - mine.length)), [weeks, state, focus, clock, mine.length]);
 
   return (
     <section className="card moves" aria-labelledby="moves-h">
@@ -92,18 +90,17 @@ function NextMoves() {
       {!person && (
         <p className="note">
           <button type="button" className="link-btn" onClick={openProfile}>
-            Add your name
+            Sign in
           </button>{" "}
-          to grab tasks and earn XP.
+          with your Trinity Google account to grab a task.
         </p>
       )}
       {mine.length > 0 && (
         <div className="mv-block">
           <div className="label">You grabbed</div>
-          {mine.slice(0, 5).map(({ w, it }) => (
+          {mine.map(({ w, it }) => (
             <Task key={it.id} it={it} showTrack weekLabel={`Week ${w.n}`} />
           ))}
-          {mine.length > 5 && <p className="note">…and {mine.length - 5} more.</p>}
         </div>
       )}
       {open.length > 0 && (
@@ -119,6 +116,17 @@ function NextMoves() {
   );
 }
 
+function PaceLine() {
+  const { weeks, state, clock } = useApp();
+  const copy = PACE_COPY[pace(weeks, state.checks, clock).level];
+  const shown = clock.before ? 1 : clock.now;
+  return (
+    <p className="pace-line">
+      <b>{copy.title}.</b> {copy.line} <Link href={`/week/${shown}`}>Open this week</Link>
+    </p>
+  );
+}
+
 export function HomeView() {
   const { clock } = useApp();
   const shown = clock.before ? 1 : clock.now;
@@ -130,30 +138,9 @@ export function HomeView() {
       </div>
 
       <div className="wrap stack-lg">
+        <PaceLine />
         <BoredBanner />
-
-        <div className="home-grid">
-          <div className="col">
-            <NextMoves />
-            <section className="card glance" aria-labelledby="glance-h">
-              <div className="glance-head">
-                <h2 id="glance-h">{clock.before ? "Week 1" : "This week"} at a glance</h2>
-                <Link href={`/week/${shown}`} className="btn sm">
-                  Open the plan →
-                </Link>
-              </div>
-              <TrackRings weekN={shown} />
-            </section>
-            <ActivityFeed />
-          </div>
-          <div className="col">
-            <MeCard />
-            <PaceCard />
-            <RailsCard />
-            <HeadsUp />
-            <HiveMini />
-          </div>
-        </div>
+        <NextMoves />
       </div>
     </>
   );

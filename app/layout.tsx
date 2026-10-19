@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Montserrat, Source_Serif_4 } from "next/font/google";
-import { AppProvider } from "@/components/AppProvider";
+import { Providers } from "@/components/Providers";
 import { BottomNav, Footer, Header, PreviewBar, ProfileDialog, Ready, Toasts } from "@/components/Shell";
 import "./globals.css";
 
@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${ui.variable}`}>
       <body>
-        <AppProvider>
+        <Providers>
           <a href="#main" className="skip">
             Skip to content
           </a>
@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <BottomNav />
           <Toasts />
           <ProfileDialog />
-        </AppProvider>
+        </Providers>
       </body>
     </html>
   );

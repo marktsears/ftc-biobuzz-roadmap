@@ -1618,6 +1618,45 @@ select:focus {
 }
 
 /* ---------- home grid ---------- */
+.pace-line {
+  margin: 4px 0 0;
+  font-family: var(--font-u);
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.pace-line a {
+  color: var(--navy);
+  font-weight: 600;
+}
+.google-btn {
+  width: 100%;
+  margin: 4px 0 16px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--navy);
+  font-family: var(--font-u);
+  font-weight: 600;
+  font-size: 15px;
+}
+.google-btn:hover {
+  background: var(--ice);
+}
+.google-btn:disabled {
+  opacity: 0.55;
+}
+.auth-error {
+  padding: 72px 0 96px;
+  max-width: 640px;
+}
+.auth-error h1 {
+  font-family: var(--font-d);
+  font-weight: 500;
+  font-size: 48px;
+  color: var(--navy);
+  margin: 8px 0 12px;
+}
 .home-grid {
   display: grid;
   grid-template-columns: 1.35fr 1fr;

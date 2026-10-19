@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useApp } from "./AppProvider";
 import { Avatar, Icon, type IconName } from "./ui";
 import { TRACKS } from "@/lib/data/core";
-import { personalLevel } from "@/lib/xp";
+import { signIn, signOut } from "next-auth/react";
 import { fmtLong } from "@/lib/time";
 import { TEAM_IDS, type Focus, type TeamId } from "@/lib/types";
 
@@ -44,8 +44,7 @@ export function BrandMark({ size = 40 }: { size?: number }) {
 export function Header() {
   const path = usePathname();
   const nav = useNav();
-  const { team, setTeam, person, me, openProfile } = useApp();
-  const lvl = personalLevel(me?.xp ?? 0);
+  const { team, setTeam, person, openProfile } = useApp();
   return (
     <header className="site-head">
       <div className="wrap head-in">
@@ -76,20 +75,17 @@ export function Header() {
               </button>
             ))}
           </div>
-          <button type="button" className="me-chip" onClick={openProfile} aria-label={person ? `You are ${person}. Open your profile` : "Tell us who you are"}>
+          <button type="button" className="me-chip" onClick={openProfile} aria-label={person ? `You are ${person}. Open your profile` : "Sign in with Google"}>
             {person ? (
               <>
                 <Avatar name={person} size={30} />
                 <span className="me-text">
                   <b>{person}</b>
-                  <small>
-                    {lvl.name} · {me?.xp ?? 0} XP
-                  </small>
                 </span>
               </>
             ) : (
               <span className="me-text">
-                <b>Who’s buzzing?</b>
+                <b>Sign in</b>
               </span>
             )}
           </button>
@@ -188,24 +184,26 @@ const FOCUS: { code: Focus; label: string }[] = [
 ];
 
 export function ProfileDialog() {
-  const { profileOpen, closeProfile, person, setPerson, team, setTeam, focus, setFocus, code, setCode, state, preview, setPreview, offline } = useApp();
+  const { profileOpen, closeProfile, person, email, team, setTeam, focus, setFocus, code, setCode, state, preview, setPreview, offline } = useApp();
   const ref = useRef<HTMLDialogElement>(null);
-  const [name, setName] = useState(person);
   const [pv, setPv] = useState(preview ?? "");
+  const [googleOn, setGoogleOn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
     if (profileOpen && !d.open) {
-      setName(person);
       setPv(preview ?? "");
       d.showModal();
+      fetch("/api/auth/providers")
+        .then(r => r.json())
+        .then(p => setGoogleOn(!!p?.google))
+        .catch(() => setGoogleOn(false));
     }
     if (!profileOpen && d.open) d.close();
-  }, [profileOpen, person, preview]);
+  }, [profileOpen, preview]);
 
   const save = () => {
-    if (name.trim()) setPerson(name);
     if (pv !== (preview ?? "")) setPreview(pv || null);
     closeProfile();
   };
@@ -230,18 +228,25 @@ export function ProfileDialog() {
         <div className="dialog-head">
           <div>
             <div className="eyebrow">Trinity Robotics</div>
-            <h2 id="profile-title">{person ? `Hi, ${person}` : "Who’s buzzing?"}</h2>
+            <h2 id="profile-title">{person ? `Hi, ${person}` : "Sign in"}</h2>
           </div>
           <button type="button" className="icon-btn" onClick={closeProfile} aria-label="Close">
             <Icon name="x" />
           </button>
         </div>
-        <p className="muted">No account needed. Type your name so the team can see who did what. Your ticks count toward your XP.</p>
-
-        <label className="field">
-          <span>Your name (first name and last initial is fine)</span>
-          <input value={name} onChange={e => setName(e.target.value)} maxLength={24} autoComplete="given-name" placeholder="Maya R" />
-        </label>
+        {person ? (
+          <p className="muted">
+            Signed in{email ? ` as ${email}` : ""}. Your name on ticks comes from your Trinity Google account.
+          </p>
+        ) : (
+          <>
+            <p className="muted">Use the Google account Trinity School gave you. That’s how the team sees who did what.</p>
+            <button type="button" className="google-btn" disabled={googleOn === false} onClick={() => signIn("google")}>
+              Sign in with Google
+            </button>
+            {googleOn === false && <p className="muted small">Google sign-in isn’t configured on this server yet.</p>}
+          </>
+        )}
 
         <div className="field">
           <span>Your team</span>
@@ -288,9 +293,15 @@ export function ProfileDialog() {
         </details>
 
         <div className="dialog-foot">
-          <button type="button" className="link-btn" onClick={closeProfile}>
-            Just looking
-          </button>
+          {person ? (
+            <button type="button" className="link-btn" onClick={() => signOut()}>
+              Sign out
+            </button>
+          ) : (
+            <button type="button" className="link-btn" onClick={closeProfile}>
+              Just looking
+            </button>
+          )}
           <button type="submit" className="cta solid">
             <span>Save</span>
             <i className="cta-dot" aria-hidden="true">
@@ -310,8 +321,6 @@ export function Footer() {
       <div className="wrap">
         <div>
           <b>Trinity Robotics</b> · FTC 2026–27 · BIOBUZZ · Team {team}
-          <p>Planned dates: robot to coders Sun 1 Nov 2026, NC scrimmage Sat 12 Dec, NC qualifier Sat 16 Jan 2027. Confirm event dates on the NC FTC calendar.</p>
-          <p>Game facts come from the BIOBUZZ Competition Manual (TU05, Oct 15) and the one-page game description. Recheck Team Updates and Q&amp;A every Monday and before every event, including where the AprilTags are.</p>
           <p>
             {state.mode === "db" && "Progress is saved to the team’s shared database. "}
             {state.mode === "file" && "Development mode: progress is saved to a file on this computer. "}
