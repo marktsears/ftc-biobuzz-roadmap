@@ -22,7 +22,7 @@ Preview any date, to see the app mid-season: `http://localhost:3000/?date=2026-1
 
 ## Sign in
 
-Google sign-in is limited to the Trinity School Workspace domain (`tsdch.org`, including subdomains). The name on a tick comes from the Google account, not from something typed in.
+Google sign-in is limited to the Trinity School Workspace domain (`tsdch.org`, including subdomains), plus a short allowlist. `msears@gmail.com` is always allowed. Add more with `AUTH_ALLOWED_EMAILS` (comma-separated). The name on a tick comes from the Google account, not from something typed in.
 
 1. In Google Cloud, create an OAuth client of type **Web application**.
 2. Add the redirect URIs in `.env.example`.

@@ -45,6 +45,7 @@ export function Header() {
   const path = usePathname();
   const nav = useNav();
   const { team, setTeam, person, openProfile } = useApp();
+  const gate = !person && path === "/";
   return (
     <header className="site-head">
       <div className="wrap head-in">
@@ -59,13 +60,15 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="top-nav" aria-label="Main">
-          {nav.map(n => (
-            <Link key={n.href} href={n.href} className={n.match(path) ? "on" : ""} aria-current={n.match(path) ? "page" : undefined}>
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+        {!gate && (
+          <nav className="top-nav" aria-label="Main">
+            {nav.map(n => (
+              <Link key={n.href} href={n.href} className={n.match(path) ? "on" : ""} aria-current={n.match(path) ? "page" : undefined}>
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         <div className="head-tools">
           {person && (
@@ -77,7 +80,8 @@ export function Header() {
               ))}
             </div>
           )}
-          <button type="button" className={person ? "me-chip" : "signin-cta"} onClick={openProfile} aria-label={person ? `You are ${person}. Open your account` : "Sign in with Google"}>
+          {!gate && (
+          <button type="button" className={person ? "me-chip" : "signin-cta"} onClick={openProfile} aria-label={person ? "Open your account" : "Sign in with Google"}>
             {person ? (
               <>
                 <Avatar name={person} size={30} />
@@ -89,6 +93,7 @@ export function Header() {
               "Sign in"
             )}
           </button>
+          )}
         </div>
       </div>
     </header>
@@ -98,10 +103,12 @@ export function Header() {
 export function BottomNav() {
   const path = usePathname();
   const nav = useNav();
+  const { person } = useApp();
   const [more, setMore] = useState(false);
+  useEffect(() => setMore(false), [path]);
+  if (!person && path === "/") return null;
   const main = nav.filter(n => ["Home", "Week", "Quests", "Hive"].includes(n.label));
   const rest = nav.filter(n => !main.includes(n));
-  useEffect(() => setMore(false), [path]);
   return (
     <>
       {more && (
@@ -133,8 +140,9 @@ export function BottomNav() {
 }
 
 export function SignInBar() {
+  const path = usePathname();
   const { person, openProfile } = useApp();
-  if (person) return null;
+  if (person || path === "/") return null;
   return (
     <div className="signin-bar">
       <div className="wrap">
@@ -148,8 +156,9 @@ export function SignInBar() {
 }
 
 export function PreviewBar() {
-  const { preview, setPreview, clock } = useApp();
-  if (!preview) return null;
+  const path = usePathname();
+  const { preview, setPreview, clock, person } = useApp();
+  if (!preview || (!person && path === "/")) return null;
   return (
     <div className="preview-bar" role="status">
       <div className="wrap">
@@ -300,7 +309,7 @@ export function ProfileDialog() {
               <GoogleMark />
               Continue with Google
             </button>
-            <p className="muted small center">Trinity accounts only.</p>
+            <p className="muted small center">Use your Trinity School Google account.</p>
             {googleOn === false && <p className="muted small">Google sign-in isn’t configured on this server yet.</p>}
           </>
         )}
@@ -401,7 +410,9 @@ export function ProfileDialog() {
 }
 
 export function Footer() {
-  const { state, team } = useApp();
+  const path = usePathname();
+  const { state, team, person } = useApp();
+  if (!person && path === "/") return null;
   return (
     <footer className="site-foot">
       <div className="wrap">
