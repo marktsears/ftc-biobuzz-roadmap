@@ -15,69 +15,89 @@ import { MILESTONES, phaseOf, qualifier, wEnd, wStart } from "@/lib/weeks";
 import { diffDays } from "@/lib/time";
 
 export function Hero() {
-  const { weeks, clock, team, person } = useApp();
+  const { weeks, clock, team } = useApp();
   const w = weeks[clock.now - 1];
   const p = phaseOf(w.phase);
-  const dq = daysTo(pd(qualifier.date), clock);
   const shown = clock.before ? 1 : clock.now;
+  const next = MILESTONES.find(m => pd(m.date) >= clock.today);
+  const qualDays = daysTo(pd(qualifier.date), clock);
+  const facts = clock.after
+    ? []
+    : [
+        next && next.key !== "qual"
+          ? {
+              k: "Next",
+              name: next.name,
+              when:
+                daysTo(pd(next.date), clock) === 0
+                  ? "Today"
+                  : `${fmt(pd(next.date))} · ${plural(daysTo(pd(next.date), clock), "day")}`,
+            }
+          : null,
+        qualDays >= 0
+          ? {
+              k: "Qualifier",
+              name: qualDays === 0 ? "Today" : fmt(pd(qualifier.date)),
+              when: qualDays === 0 ? qualifier.name : plural(qualDays, "day"),
+            }
+          : null,
+      ].filter((f): f is { k: string; name: string; when: string } => !!f);
 
-  let sub: React.ReactNode;
-  if (clock.before) {
-    const d = diffDays(clock.first, clock.today);
-    sub = (
-      <>
-        <b>Week 1 starts Monday {fmt(clock.first)}</b> ({d === 1 ? "tomorrow" : "in " + plural(d, "day")}). Do the short “Before Monday” list below, then open Week 1.
-      </>
-    );
-  } else if (clock.after) {
-    sub = "The planned season is complete. Use the debrief and improvement weeks again, or add the next event’s plan.";
-  } else if (w.brk) {
-    sub = (
-      <>
-        <b>{p.name}</b> · {fmt(wStart(w))} – {fmt(wEnd(w))}. Rest, or do the optional list.
-      </>
-    );
-  } else {
-    const next = MILESTONES.find(m => pd(m.date) >= clock.today);
-    const milestone = !next
-      ? "The last dated milestone has passed."
-      : daysTo(pd(next.date), clock) === 0
-        ? `${next.name} is today.`
-        : `${next.name} is ${fmt(pd(next.date))}, in ${plural(daysTo(pd(next.date), clock), "day")}.`;
-    sub = (
-      <>
-        <b>{p.name}</b> · {fmt(wStart(w))} – {fmt(wEnd(w))} · {milestone}
-      </>
-    );
-  }
+  const lead = clock.before
+    ? `Week 1 starts ${fmt(clock.first)}`
+    : clock.after
+      ? "Season complete"
+      : p.name;
+  const when = clock.before
+    ? diffDays(clock.first, clock.today) === 1
+      ? "Tomorrow"
+      : `In ${plural(diffDays(clock.first, clock.today), "day")}`
+    : clock.after
+      ? "The dated plan has finished"
+      : `${fmt(wStart(w))} – ${fmt(wEnd(w))}`;
+  const note = clock.before
+    ? "Do the short “Before Monday” list, then open Week 1."
+    : clock.after
+      ? "Use the debrief weeks again, or add the next event’s plan."
+      : w.brk
+        ? "Rest, or do the optional list."
+        : `${w.title}.`;
 
   return (
     <section className="hero">
       <Shapes variant="hero" />
       <div className="wrap hero-in">
-        <div className="hero-copy">
-          <div className="eyebrow light">BIOBUZZ · Team {team}</div>
-          <h1>
-            <span className="wk">Week</span>
-            <span className="big">{shown}</span>
-            <span className="of">of {weeks.length}</span>
-          </h1>
-          <p className="sub">{sub}</p>
-          <p className="hello">{person ? `Hi ${person}. ` : ""}{w.title}.</p>
-          <div className="hero-actions">
-            <Cta href={`/week/${shown}`} variant="light">
-              Open this week’s plan
-            </Cta>
-            <Link className="ghost-link" href="/quests">
-              Not sure what to do?
-            </Link>
-          </div>
-        </div>
-        <div className="hero-side" aria-label="Countdown to the qualifier">
-          <div className="countdown">
-            <b>{dq > 0 ? dq : dq === 0 ? "Today" : Math.abs(dq)}</b>
-            <small>{dq > 0 ? (dq === 1 ? "day to the qualifier" : "days to the qualifier") : dq === 0 ? "is qualifier day" : "days since the qualifier"}</small>
-          </div>
+        <div className="eyebrow light">BIOBUZZ · Team {team}</div>
+        <h1>
+          <span className="wk">Week</span>
+          <span className="big">{shown}</span>
+          <span className="of">of {weeks.length}</span>
+        </h1>
+        {facts.length > 0 && (
+          <dl className="hero-facts">
+            {facts.map(f => (
+              <div key={f.k}>
+                <dt>{f.k}</dt>
+                <dd>
+                  <b>{f.name}</b>
+                  <span>{f.when}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        <p className="lede">
+          <b>{lead}</b>
+          <span>{when}</span>
+        </p>
+        <p className="hello">{note}</p>
+        <div className="hero-actions">
+          <Cta href={`/week/${shown}`} variant="light">
+            Open this week’s plan
+          </Cta>
+          <Link className="ghost-link" href="/quests">
+            Not sure what to do?
+          </Link>
         </div>
       </div>
     </section>
