@@ -82,4 +82,4 @@ supabase/     schema.sql
 legacy/       the original single-file HTML version
 ```
 
-Format inspired by Coach Brogan Pratt's "Week N" plans. Not affiliated with FIRST or Trinity School.
+Not affiliated with FIRST or Trinity School.

@@ -339,11 +339,11 @@ function Origin() {
     <div className="tab-panel">
       <section className="card prose">
         <p>
-          The “Week N plan for success” idea is borrowed from <b>Coach Brogan Pratt’s</b> DECODE series: each week gets one plan, split into build &amp; design, programming and outreach. We added drive &amp; strategy, gates, a rails check, and a quest board for when you’re not sure what to do.
+          Each week gets one plan, split into build, software, drive and outreach. Gates, a rails check, and a quest board sit on top for when you’re not sure what to do.
         </p>
         <ul>
           <li>
-            <b>Test several ideas before committing.</b> His Week 3 plan pushes quick prototypes of more than one intake and launcher before anyone falls for the first thing that works. Same idea here: nothing gets cut in final parts until it’s been tested in cardboard or quick-build.
+            <b>Test several ideas before committing.</b> Try more than one intake or launcher before anyone falls for the first thing that works. Nothing gets cut in final parts until it’s been tested in cardboard or quick-build.
           </li>
           <li>
             <b>Programming runs on a test robot early,</b> with pathing and driver automations coming together before the real robot is finished. That’s why code is written before Robot Day.
@@ -353,8 +353,6 @@ function Origin() {
           </li>
         </ul>
         <div className="learn">
-          <A href={LINKS.pratt3[1]}>Pratt: Week 3 plan for success</A>
-          <A href="https://www.youtube.com/@BroganMPratt/videos">Pratt’s channel</A>
           <A href={LINKS.openthread[1]}>Example: an open build thread</A>
         </div>
       </section>

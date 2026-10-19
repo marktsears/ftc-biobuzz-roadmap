@@ -73,8 +73,8 @@ const R = {
   pacImu: { label: "IMU", url: "https://www.youtube.com/watch?v=X-osmWpKnaE" },
   pacField: { label: "Field-centric drive", url: "https://www.youtube.com/watch?v=4rG5G9Mjw-g" },
   pacAuto: { label: "Autonomous program structure", url: "https://www.youtube.com/watch?v=Dd0fWPSWPMM" },
-  prattMecanum: { label: "Coach Pratt: Mecanum drive, robot vs field oriented (about 25 min)", url: "https://www.youtube.com/watch?v=sFCO4du5IZk", note: "Chapters let you jump to the part you need." },
-  prattTags: { label: "Coach Pratt: AprilTags with a standard webcam (18 min)", url: "https://www.youtube.com/watch?v=OZt33z-lyYo", note: "What a tag is, and how to read its ID, range and angle." },
+  prattMecanum: { label: "Mecanum drive, robot vs field oriented (about 25 min)", url: "https://www.youtube.com/watch?v=sFCO4du5IZk", note: "Chapters let you jump to the part you need." },
+  prattTags: { label: "AprilTags with a standard webcam (18 min)", url: "https://www.youtube.com/watch?v=OZt33z-lyYo", note: "What a tag is, and how to read its ID, range and angle." },
   deadwheel: { label: "The Ultimate Guide to FTC Deadwheel Odometry", url: "https://www.youtube.com/watch?v=RoDBoqOMc5A" },
   simpleOdo: { label: "SimplifiedOdometry (code + short videos)", url: "https://github.com/gearsincorg/SimplifiedOdometry" },
   pidf: { label: "PIDF loops & arm control (KookyBotz 16379)", url: "https://www.youtube.com/watch?v=E6H6Nqe6qJo", note: "Watch for the idea of error, then skip the library setup." },
@@ -95,7 +95,7 @@ const R = {
   tags: { label: "FTC Docs: AprilTags", url: "https://ftc-docs.firstinspires.org/en/latest/apriltag/vision_portal/apriltag_intro/apriltag-intro.html" },
   ll: { label: "Limelight: FTC setup", url: "https://docs.limelightvision.io/docs/docs-limelight/getting-started/FTC/setup" },
   llcolor: { label: "Limelight: color pipelines", url: "https://docs.limelightvision.io/docs/docs-limelight/pipeline-retro/retro-theory" },
-  pratt3: { label: "Coach Pratt: a Week plan for success", url: "https://www.youtube.com/watch?v=v2Roi633ZkY", note: "Notice how he tests more than one idea before committing." },
+  pratt3: { label: "A week plan, as an example", url: "https://www.youtube.com/watch?v=v2Roi633ZkY", note: "Notice how more than one idea gets tested before anyone commits." },
 } satisfies Record<string, Resource>;
 
 export const QUESTS: Quest[] = [
@@ -305,7 +305,7 @@ export const QUESTS: Quest[] = [
     blurb: "Work out the four wheel powers for driving, strafing and turning before touching code.",
     why: "If you can predict the numbers, you can debug a robot that drives in the wrong direction.",
     steps: [
-      "Watch the section on the mecanum math in Coach Pratt’s video (jump to “Mecanum Drive Class”).",
+      "Watch the section on the mecanum math (jump to “Mecanum Drive Class”).",
       "Draw the four wheels and their roller directions on paper.",
       "Fill in a table: driving forward, driving backward, strafing right, strafing left and turning right. Put a + or − next to each wheel.",
       "Check your table against the formula in the video.",
@@ -324,7 +324,7 @@ export const QUESTS: Quest[] = [
     blurb: "Robot-oriented vs field-oriented control, and why drivers love the second one.",
     why: "Drivers on a field-centric robot learn faster and make fewer mistakes under pressure.",
     steps: [
-      "Watch Coach Pratt’s explanation of robot vs field orientation.",
+      "Watch the explanation of robot vs field orientation.",
       "Watch the IMU and field-centric videos in the Pacewic series.",
       "Write three sentences: what the IMU measures, why field-centric needs it, and what the driver does to reset it.",
       "Give one situation where robot-oriented is actually easier.",
@@ -403,7 +403,7 @@ export const QUESTS: Quest[] = [
     blurb: "A tag has an ID, a distance and an angle. Learn what each one is good for.",
     why: "Aiming the turret and knowing which Hive cell is up both depend on reading tags correctly.",
     steps: [
-      "Watch Coach Pratt’s AprilTag video.",
+      "Watch the AprilTag video.",
       "Write down: what is a tag’s ID? What are range, bearing and yaw?",
       "Look at our manual’s section on the Hive cells and say where the tags are and how they move.",
       "Write two ways a tag reading could be wrong (hint: something is moving).",

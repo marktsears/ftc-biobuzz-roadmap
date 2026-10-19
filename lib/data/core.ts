@@ -21,7 +21,7 @@ export const LINKS: Record<string, [string, string]> = {
   walkthrough: ["Field walkthrough (video)", "https://www.youtube.com/watch?v=47X9sYnPijw"],
   animation: ["Game animation (video)", "https://www.youtube.com/watch?v=sUH3z5a5S9I"],
   rules: ["Searchable rule index (unofficial)", "https://biobuzz-ten.vercel.app/rulebook/"],
-  pratt3: ["Pratt: a week plan, as an example", "https://www.youtube.com/watch?v=v2Roi633ZkY"],
+  pratt3: ["A week plan, as an example", "https://www.youtube.com/watch?v=v2Roi633ZkY"],
   openthread: ["Example open build thread", "https://www.chiefdelphi.com/t/ftc-12862-build-thread-2025-decode/505789"],
   gm0: ["gm0: Game Manual 0", "https://gm0.org/en/latest/"],
   revdocs: ["REV docs", "https://docs.revrobotics.com/"],

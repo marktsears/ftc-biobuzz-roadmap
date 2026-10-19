@@ -411,19 +411,14 @@ export function ProfileDialog() {
 
 export function Footer() {
   const path = usePathname();
-  const { state, team, person } = useApp();
+  const { team, person } = useApp();
   if (!person && path === "/") return null;
   return (
     <footer className="site-foot">
       <div className="wrap">
         <div>
           <b>Trinity Robotics</b> · FTC 2026–27 · BIOBUZZ · Team {team}
-          <p>
-            {state.mode === "db" && "Progress is saved to the team’s shared database. "}
-            {state.mode === "file" && "Development mode: progress is saved to a file on this computer. "}
-            {state.mode === "local" && "Progress is saved in this browser only. "}
-            Format inspired by Coach Brogan Pratt’s “Week N” plans. Not affiliated with FIRST.
-          </p>
+          <p>Not affiliated with FIRST.</p>
         </div>
       </div>
     </footer>
