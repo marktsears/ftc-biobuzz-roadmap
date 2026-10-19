@@ -20,11 +20,13 @@ export function Hero() {
   const p = phaseOf(w.phase);
   const shown = clock.before ? 1 : clock.now;
   const next = MILESTONES.find(m => pd(m.date) >= clock.today);
+  const scrimmage = MILESTONES.find(m => m.key === "scrim");
+  const scrimDays = scrimmage ? daysTo(pd(scrimmage.date), clock) : -1;
   const qualDays = daysTo(pd(qualifier.date), clock);
   const facts = clock.after
     ? []
     : [
-        next && next.key !== "qual"
+        next && next.key !== "scrim" && next.key !== "qual"
           ? {
               k: "Next",
               name: next.name,
@@ -32,6 +34,13 @@ export function Hero() {
                 daysTo(pd(next.date), clock) === 0
                   ? "Today"
                   : `${fmt(pd(next.date))} · ${plural(daysTo(pd(next.date), clock), "day")}`,
+            }
+          : null,
+        scrimmage && scrimDays >= 0
+          ? {
+              k: "Scrimmage",
+              name: scrimDays === 0 ? "Today" : fmt(pd(scrimmage.date)),
+              when: scrimDays === 0 ? scrimmage.name : plural(scrimDays, "day"),
             }
           : null,
         qualDays >= 0

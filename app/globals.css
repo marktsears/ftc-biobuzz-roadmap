@@ -1323,13 +1323,13 @@ body:has(.signin-gate) {
   grid-row: 1 / span 5;
   align-self: center;
   display: flex;
-  gap: 28px;
+  gap: 22px;
   margin: 0;
 }
 .hero-facts > div {
   display: grid;
   gap: 2px;
-  min-width: 8.5rem;
+  min-width: 7.5rem;
 }
 .hero-facts dt {
   font-family: var(--font-u);
@@ -1354,7 +1354,7 @@ body:has(.signin-gate) {
   font-size: 15px;
   opacity: 0.8;
 }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .hero-in {
     grid-template-columns: 1fr;
   }
