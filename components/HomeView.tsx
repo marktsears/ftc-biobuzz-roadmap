@@ -56,7 +56,7 @@ export function Hero() {
       <Shapes variant="hero" />
       <div className="wrap hero-in">
         <div className="hero-copy">
-          <div className="eyebrow light">Trinity Robotics · FTC 2026–27 · BIOBUZZ · Team {team}</div>
+          <div className="eyebrow light">BIOBUZZ · Team {team}</div>
           <h1>
             <span className="wk">Week</span>
             <span className="big">{shown}</span>
@@ -157,7 +157,7 @@ function SignInGate({ week }: { week: number }) {
     <section className="signin-gate">
       <Shapes variant="hero" />
       <div className="signin-card">
-        <div className="eyebrow">Trinity Robotics · FTC 2026–27 · BIOBUZZ</div>
+        <div className="eyebrow">BIOBUZZ</div>
         <h1>Sign in</h1>
         <p>Use the Google account Trinity School gave you. Next you’ll choose your team and what you work on.</p>
         <button type="button" className="google-btn" disabled={googleOn === false} onClick={() => signIn("google")}>

@@ -54,9 +54,6 @@ export function Header() {
           <span className="brand-text">
             <b>Trinity</b>
             <b>Robotics</b>
-            <small>
-              of <em>Trinity School</em> · Durham and Chapel Hill
-            </small>
           </span>
         </Link>
 
@@ -417,8 +414,7 @@ export function Footer() {
     <footer className="site-foot">
       <div className="wrap">
         <div>
-          <b>Trinity Robotics</b> · FTC 2026–27 · BIOBUZZ · Team {team}
-          <p>Not affiliated with FIRST.</p>
+          <b>BIOBUZZ</b> · Team {team}
         </div>
       </div>
     </footer>

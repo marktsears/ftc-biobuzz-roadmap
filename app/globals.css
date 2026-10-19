@@ -647,18 +647,6 @@ select:focus {
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.brand-text small {
-  font-family: var(--font-d);
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  margin-top: 4px;
-  opacity: 0.85;
-  white-space: nowrap;
-}
-.brand-text small em {
-  font-weight: 700;
-  font-style: italic;
-}
 .top-nav {
   display: none;
   gap: 4px;
@@ -749,9 +737,6 @@ select:focus {
     letter-spacing: 0.04em;
     padding: 7px 8px;
   }
-  .brand-text small {
-    display: none;
-  }
   .brand-text b {
     font-size: 19px;
   }
@@ -760,9 +745,6 @@ select:focus {
   }
 }
 @media (max-width: 560px) {
-  .brand-text small {
-    display: none;
-  }
   .brand-text b {
     font-size: 18px;
   }
