@@ -92,6 +92,8 @@ export interface Week {
 export interface Phase {
   id: string;
   name: string;
+  /** Short label for a collapsed calendar chunk. */
+  short: string;
   color: string;
   blurb: string;
 }

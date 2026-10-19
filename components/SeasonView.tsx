@@ -87,9 +87,11 @@ export function SeasonView() {
                         <div className="g">{w.goal}</div>
                         <div className="pp">
                           {gt > 0 && <Pill tone={gc === gt ? "full" : undefined}>Gate {gc}/{gt}</Pill>}
-                          <Pill tone={full ? "full" : late ? "late" : undefined}>
-                            {dc}/{dt} demos
-                          </Pill>
+                          {dt > 0 && (
+                            <Pill tone={full ? "full" : late ? "late" : undefined}>
+                              {dc}/{dt} demos
+                            </Pill>
+                          )}
                         </div>
                       </div>
                     </Link>

@@ -14,7 +14,7 @@ export function HiveView() {
   const lvl = hiveLevel(teamXp, team);
   const mine = new Set(badgesOf(me));
   const crew = useMemo(() => [...people].sort((a, b) => (a.last < b.last ? 1 : -1)), [people]);
-  const rows = [weeks.slice(0, 8), weeks.slice(8)];
+  const rows = Array.from({ length: Math.ceil(weeks.length / 8) }, (_, i) => weeks.slice(i * 8, i * 8 + 8));
 
   return (
     <>
@@ -65,8 +65,9 @@ export function HiveView() {
                   const pct = t ? (100 * d) / t : 0;
                   const isNow = !clock.before && w.n === clock.now;
                   const future = !clock.before ? w.n > clock.now : w.n > 1;
+                  const elapsed = t === 0 && !future && !isNow && !clock.before;
                   return (
-                    <Link key={w.n} role="listitem" href={`/week/${w.n}`} className={`hex ${isNow ? "now" : ""} ${future && pct === 0 ? "future" : ""} ${pct === 100 ? "full" : ""}`} style={{ ["--fill" as string]: `${pct}%` } as React.CSSProperties} title={`Week ${w.n}: ${d} of ${t}`} aria-label={`Week ${w.n}: ${d} of ${t} done`}>
+                    <Link key={w.n} role="listitem" href={`/week/${w.n}`} className={`hex ${isNow ? "now" : ""} ${future && pct === 0 ? "future" : ""} ${pct === 100 ? "full" : ""} ${elapsed ? "elapsed" : ""}`} style={{ ["--fill" as string]: `${pct}%` } as React.CSSProperties} title={elapsed ? `Week ${w.n}: already past` : `Week ${w.n}: ${d} of ${t}`} aria-label={elapsed ? `Week ${w.n}, already past` : `Week ${w.n}: ${d} of ${t} done`}>
                       <span>{w.n}</span>
                     </Link>
                   );

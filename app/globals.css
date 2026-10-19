@@ -32,6 +32,7 @@
   --t-A: #1f3c6e;
 
   /* phases */
+  --p-reveal: #8a6232;
   --p-sprint: #b8820a;
   --p-bring: #0e487d;
   --p-aim: #413780;
@@ -1409,6 +1410,55 @@ body:has(.signin-gate) {
   display: grid;
   grid-template-columns: repeat(var(--cols), 1fr);
 }
+.tr-note {
+  margin: 0;
+  padding: 0 18px 8px;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.tr-phases {
+  display: flex;
+  gap: 6px;
+  padding: 4px 12px 0;
+}
+.tr-phases .stage {
+  flex: 1 1 0;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 16px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.tr-phases .stage.open {
+  flex: 2.6 1 0;
+  background: var(--ice);
+}
+@media (max-width: 800px) {
+  .tr-phases {
+    flex-wrap: wrap;
+  }
+  .tr-phases .stage,
+  .tr-phases .stage.open {
+    flex: 1 1 30%;
+  }
+}
+.tr-phases .stage:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+.tr-focus {
+  margin: 10px 18px 0;
+  font-size: 15.5px;
+  color: var(--ink);
+}
+.tr-focus b {
+  font-family: var(--font-d);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--c, var(--navy));
+}
 .stage {
   position: relative;
   padding: 10px 6px 4px;
@@ -1433,9 +1483,16 @@ body:has(.signin-gate) {
 .stage .sn {
   font-family: var(--font-d);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--c);
   line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stage.open .sn {
+  font-size: 16px;
+  white-space: normal;
 }
 .stage .ss {
   font-family: var(--font-u);
@@ -3479,6 +3536,9 @@ table {
 .hex.full {
   background: var(--navy);
   color: var(--gold);
+}
+.hex.elapsed {
+  background: var(--gold-3);
 }
 .hex span {
   position: relative;

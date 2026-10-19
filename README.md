@@ -3,7 +3,7 @@
 A season guide and progress tracker for Trinity Robotics FTC teams **2827** and **3587** (2026–27, BIOBUZZ).
 It's a Next.js app, hosted on Vercel. Students sign in with their Trinity Google account (`@tsdch.org`).
 
-- **Home**: "Week N of 16", a pizza-tracker of the season, your next moves, and a "Not sure what to do? Bored?" panel.
+- **Home**: "Week N" counted from the week after the BIOBUZZ reveal, a calendar of the season, your next moves, and a "Not sure what to do? Bored?" panel.
 - **Week**: the plan for each week (Build, Software, Drive, Outreach, Demo and Gate), with tickable tasks, "if you're behind" guidance and traps.
 - **Quests**: small self-serve challenges (watch, Onshape design, code, quiz, hands-on, planning) for anyone who isn't sure what to do.
 - **Season, Robot, Playbook**: the whole season, each team's robot and motor/servo budget, and the cheat sheets.

@@ -71,7 +71,7 @@ export const TEAMS: Record<TeamId, TeamInfo> = {
       ["Camera", "Not decided. Recommended: Limelight on the turret, tilted up at the Hive cells. Charlotte’s ball-following exists."],
     ],
     risks: [
-      "The turret decision (1 motor vs 2 servos) sets the whole port budget. Decide it in Week 1.",
+      "The turret decision (1 motor vs 2 servos) sets the whole port budget. Decide it in Week 6.",
       "The mode switch is a wear point. If the traction wheels drop, the Pinpoint pods must still touch the floor.",
       "Color sensors read ambient light as much as balls. Shield them and test with shadows.",
       "A camera on a turret needs a cable path through the full rotation.",
@@ -128,22 +128,23 @@ export const VISION_NOTE: Record<TeamId, string> = {
 
 // Stages of the season (the pizza-tracker steps).
 export const PHASES: Phase[] = [
-  {id:"sprint", name:"Sprint to Robot Day", color:"--p-sprint", blurb:"Two weeks to build v1, write every subsystem, and hand a working robot to coders and drivers on Sunday Nov 1."},
-  {id:"bring", name:"Bring-up", color:"--p-bring", blurb:"Drivers driving by day three. Then motion and scoring run in parallel while builders harden the robot from what drivers and coders find."},
-  {id:"aim", name:"Aim and integrate", color:"--p-aim", blurb:"Turret, camera and one-button scoring come together. Accuracy from fixed spots must already work."},
-  {id:"scrim", name:"Scrimmage", color:"--p-scrim", blurb:"The dress rehearsal. Play full matches, find every failure, fix the top three, tag a release candidate before break."},
-  {id:"break", name:"Winter break", color:"--p-break", blurb:"Optional. rc1 is tagged and the robot has a home. Rest, write the portfolio, or study top teams."},
-  {id:"qual", name:"Qualifier push", color:"--p-qual", blurb:"Fixes only, then freeze on Jan 8. Qualifier week is for driver practice, judging practice and packing."},
-  {id:"post", name:"After the qualifier", color:"--p-post", blurb:"Improve from match data: ball-finding vision, a second Auto cycle, then speed. Every change has a test and a rollback."},
+  {id:"reveal", name:"Since the reveal", short:"Reveal", color:"--p-reveal", blurb:"BIOBUZZ came out Sept 12. These five weeks already happened. The written plan starts Oct 19."},
+  {id:"sprint", name:"Sprint to Robot Day", short:"Sprint", color:"--p-sprint", blurb:"Two weeks to build v1, write every subsystem, and hand a working robot to coders and drivers on Sunday Nov 1."},
+  {id:"bring", name:"Bring-up", short:"Bring-up", color:"--p-bring", blurb:"Drivers driving by day three. Then motion and scoring run in parallel while builders harden the robot from what drivers and coders find."},
+  {id:"aim", name:"Aim and integrate", short:"Aim", color:"--p-aim", blurb:"Turret, camera and one-button scoring come together. Accuracy from fixed spots must already work."},
+  {id:"scrim", name:"Scrimmage", short:"Scrimmage", color:"--p-scrim", blurb:"The dress rehearsal. Play full matches, find every failure, fix the top three, tag a release candidate before break."},
+  {id:"break", name:"Winter break", short:"Break", color:"--p-break", blurb:"Optional. rc1 is tagged and the robot has a home. Rest, write the portfolio, or study top teams."},
+  {id:"qual", name:"Qualifier push", short:"Qualifier", color:"--p-qual", blurb:"Fixes only, then freeze on Jan 8. Qualifier week is for driver practice, judging practice and packing."},
+  {id:"post", name:"After the qualifier", short:"After", color:"--p-post", blurb:"Improve from match data: ball-finding vision, a second Auto cycle, then speed. Every change has a test and a rollback."},
 ];
 
 // Dates that matter. "week" is where the flag sits on the tracker.
 export const MILESTONES: Milestone[] = [
-  {key:"robot", name:"Robot Day", date:"2026-11-01", week:2, flag:["robot","ROBOT DAY"]},
-  {key:"scrim", name:"NC scrimmage", date:"2026-12-12", week:8, flag:["scrim","SCRIMMAGE"]},
-  {key:"rc1", name:"Release candidate", date:"2026-12-18", week:9, flag:["gate","RC1"]},
-  {key:"freeze", name:"Freeze", date:"2027-01-08", week:11, flag:["gate","FREEZE"]},
-  {key:"qual", name:"NC qualifier", date:"2027-01-16", week:12, flag:["","QUALIFIER"]},
+  {key:"robot", name:"Robot Day", date:"2026-11-01", week:7, flag:["robot","ROBOT DAY"]},
+  {key:"scrim", name:"NC scrimmage", date:"2026-12-12", week:13, flag:["scrim","SCRIMMAGE"]},
+  {key:"rc1", name:"Release candidate", date:"2026-12-18", week:14, flag:["gate","RC1"]},
+  {key:"freeze", name:"Freeze", date:"2027-01-08", week:16, flag:["gate","FREEZE"]},
+  {key:"qual", name:"NC qualifier", date:"2027-01-16", week:17, flag:["","QUALIFIER"]},
 ];
 
 // A short list for the weekend before Week 1.
@@ -153,5 +154,5 @@ export const PRE: string[] = [
   "D: Everyone on the drive team watches the field walkthrough and the game animation.",
   "S: Both coders clone the reference project and make sure it builds.",
   "O: Ask the event organizers for the qualifier’s portfolio deadline and interview schedule.",
-  "B: Each team’s build lead reads the Robot Day Gate on the Week 2 page and says out loud what’s at risk.",
+  "B: Each team’s build lead reads the Robot Day Gate on the Week 7 page and says out loud what’s at risk.",
 ];

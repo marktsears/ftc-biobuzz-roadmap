@@ -10,7 +10,22 @@ import type { RawWeek } from "../types";
            t = per-team overrides (xxxAdd appends, xxxPre prepends, xxx replaces)
    ============================================================ */
 export const WEEKS_A: RawWeek[] = [
- {n:1, start:"2026-10-19", phase:"sprint", title:"Lock v1, start building, start writing code",
+ {n:1, start:"2026-09-14", phase:"reveal", title:"The game is out",
+  goal:"BIOBUZZ was revealed on Saturday, Sept 12. This is the first full week after kickoff.",
+  why:"These early weeks are on the calendar so you can see how long the game has already been out. The written week-by-week plan starts Oct 19."},
+ {n:2, start:"2026-09-21", phase:"reveal", title:"Read it, sketch it, don’t lock it",
+  goal:"The manual is out. Ideas are cheap this week. Nothing has to be built yet.",
+  why:"A month from now the robot has to drive. This week is for understanding the game, not for freezing a design."},
+ {n:3, start:"2026-09-28", phase:"reveal", title:"Questions, not commitments",
+  goal:"Team Q&A opens today. Write the questions down before anyone cuts parts.",
+  why:"The answers that show up now are cheaper than a rebuild in November."},
+ {n:4, start:"2026-10-05", phase:"reveal", title:"Cardboard and arguments",
+  goal:"Try the risky mechanisms in cardboard or quick-build. Argue on paper, not in metal.",
+  why:"The written plan starts in two weeks. Decisions made now should still be easy to throw away."},
+ {n:5, start:"2026-10-12", phase:"reveal", title:"The plan starts Monday",
+  goal:"Robot Day is Nov 1. Next Monday the week-by-week plan begins, with a robot due thirteen days later.",
+  why:"Five weeks have already passed since the reveal. What’s still undecided on Sunday becomes a rush."},
+ {n:6, start:"2026-10-19", phase:"sprint", title:"Lock v1, start building, start writing code",
   goal:"Both teams have a one-page v1 plan, the drivetrain is on its way to driving, and software can build and deploy on its own.",
   why:"Robot Day is Sunday Nov 1, thirteen days after this week starts. Anything not decided this week gets built in a rush next week.",
   build:[
@@ -24,7 +39,7 @@ export const WEEKS_A: RawWeek[] = [
   both:["Protect main and add the PR template. Each coder merges one PR the other reviewed.","Agree every hardware name with the builders in the README (motor and servo names, ports)."],
   drive:[
    "Everyone on the drive team reads the one-page game description and watches the field walkthrough.",
-   "Pick who tries out as driver, second driver or coach, and human player. Rotate through until Week 8; nobody is locked in yet.",
+   "Pick who tries out as driver, second driver or coach, and human player. Rotate through until Week 13; nobody is locked in yet.",
    "Write strategy v1 on one page: how we want to score, what Auto does, and what we won’t do. Include the tip math.",
   ],
   outreach:[
@@ -75,7 +90,7 @@ export const WEEKS_A: RawWeek[] = [
    },
   }},
 
- {n:2, start:"2026-10-26", phase:"sprint", title:"Finish v1 and hand it over",
+ {n:7, start:"2026-10-26", phase:"sprint", title:"Finish v1 and hand it over",
   goal:"A working v1 robot is in the coders’ hands on Sunday Nov 1, and code for every subsystem is waiting for it.",
   why:"From Nov 1, software and drivers need the robot every day. Every hour it stays in the build room is an hour they don’t get.",
   event:"Robot Day: working robot handed to software on Sun Nov 1.",
@@ -127,8 +142,8 @@ export const WEEKS_A: RawWeek[] = [
    "A: Confirm the time on Sunday Nov 1 and who needs to be in the room (builders, coders, drivers).",
    "D: Who takes the robot home or where does it live between sessions? Decide before Sunday.",
   ],
-  behind:"Hand over the drivetrain and intake with a fixed turret (or none) and add the turret in Week 4. Never hand over a robot that can’t drive.",
-  ahead:["Add the turret now and test its soft limits.","Run the camera cables so Week 6 is only brackets."],
+  behind:"Hand over the drivetrain and intake with a fixed turret (or none) and add the turret in Week 9. Never hand over a robot that can’t drive.",
+  ahead:["Add the turret now and test its soft limits.","Run the camera cables so Week 11 is only brackets."],
   sat:"Final build day. If the builders can spare one flywheel motor, coders bench-test it with velocity control.",
   trap:["Calling the robot “almost done”. Done means the Robot Day Gate, not a feeling.","Using sleep() in a subsystem. Methods set goals; periodic() does the work."],
   learn:["ll","llprog","trcll","gm0fsm"],
@@ -151,7 +166,7 @@ export const WEEKS_A: RawWeek[] = [
    },
   }},
 
- {n:3, start:"2026-11-02", phase:"bring", title:"Robot Day week: drivable by Wednesday",
+ {n:8, start:"2026-11-02", phase:"bring", title:"Robot Day week: drivable by Wednesday",
   goal:"Drivers drive by Wednesday. By Friday every mechanism moves from its test OpMode.",
   why:"Drivers need practice hours as much as coders need test hours. Give them the drive first.",
   event:"Robot Day was Sunday Nov 1. Now the robot belongs to everyone, every day.",
@@ -204,7 +219,7 @@ export const WEEKS_A: RawWeek[] = [
    },
   }},
 
- {n:4, start:"2026-11-09", phase:"bring", title:"Ball handling and Pedro",
+ {n:9, start:"2026-11-09", phase:"bring", title:"Ball handling and Pedro",
   goal:"Pedro follows a short path accurately, and the robot handles balls the way our design intends.",
   why:"Pedro tuning only needs a drivetrain, so it starts now. Ball handling is where rules G407 (max 4) and G408 (no opponent nectar) become hardware and code.",
   build:[
@@ -260,7 +275,7 @@ export const WEEKS_A: RawWeek[] = [
    },
   }},
 
- {n:5, start:"2026-11-16", phase:"bring", title:"Accurate shots from fixed spots",
+ {n:10, start:"2026-11-16", phase:"bring", title:"Accurate shots from fixed spots",
   goal:"From three taped spots we know our hit rate. Auto v1 leaves the start, and parks if there’s time.",
   why:"Accurate beats fast. Every aim and Auto step later depends on these numbers.",
   build:[
@@ -318,7 +333,7 @@ export const WEEKS_A: RawWeek[] = [
    },
   }},
 
- {n:6, start:"2026-11-23", phase:"aim", short:"Thanksgiving week", title:"Turret control and the camera’s real job",
+ {n:11, start:"2026-11-23", phase:"aim", short:"Thanksgiving week", title:"Turret control and the camera’s real job",
   goal:"The turret goes where it’s told and stays inside its limits. The camera is mounted, measured and doing its one job.",
   why:"Aiming needs a turret you trust and a camera whose numbers mean something. The Hive tags tilt with the Hive, so the camera can’t be the robot’s map.",
   build:[
@@ -349,7 +364,7 @@ export const WEEKS_A: RawWeek[] = [
    "A: Soft freeze is Wednesday Dec 9. Nothing new after that.",
   ],
   behind:"Skip the cross-team match and the Control Award draft. Don’t skip measuring the camera positions.",
-  ahead:["Start Week 7’s aim math early.","Work out the corner-reset position."],
+  ahead:["Start Week 12’s aim math early.","Work out the corner-reset position."],
   sat:"Holiday. No Saturday session.",
   trap:["Trusting a tag while the Hive is still swinging. Wait until it settles.","A big mechanical change in a short week: nobody is there to fix it."],
   learn:["llprog","clusters","tags","gm0ctrl"],
@@ -375,7 +390,7 @@ export const WEEKS_A: RawWeek[] = [
    },
   }},
 
- {n:7, start:"2026-11-30", phase:"aim", title:"One-button scoring and auto-aim",
+ {n:12, start:"2026-11-30", phase:"aim", title:"One-button scoring and auto-aim",
   goal:"One button aims, spins up and fires up to 4 balls. Cancel always works. Shots land from spots not in the table.",
   why:"Auto reuses this exact sequence, so it lives in Robot, not in the TeleOp file. Odometry does the aiming; vision only corrects it.",
   build:[
@@ -431,7 +446,7 @@ export const WEEKS_A: RawWeek[] = [
    },
   }},
 
- {n:8, start:"2026-12-07", phase:"scrim", title:"Scrimmage week: play full matches",
+ {n:13, start:"2026-12-07", phase:"scrim", title:"Scrimmage week: play full matches",
   goal:"A robot that plays a whole match: Auto scores preloads and leaves, TeleOp scores, the robot parks at the end.",
   why:"The scrimmage is the only full rehearsal before the qualifier. Treat it like the real event.",
   event:"NC scrimmage, planned Sat Dec 12. Confirm the date.",
@@ -486,7 +501,7 @@ export const WEEKS_A: RawWeek[] = [
    WEEKS 9–16
    ============================================================ */
 export const WEEKS_B: RawWeek[] = [
- {n:9, start:"2026-12-14", phase:"scrim", title:"Fix what the scrimmage showed",
+ {n:14, start:"2026-12-14", phase:"scrim", title:"Fix what the scrimmage showed",
   goal:"The top 3 scrimmage problems are fixed and a release candidate is tagged Friday Dec 18.",
   why:"Break is next. A tagged candidate means January starts from something that works, not from half-finished fixes.",
   build:[
@@ -535,7 +550,7 @@ export const WEEKS_B: RawWeek[] = [
    "2827":{motionAdd:["Vision step 5 (only if the top 3 are done): bring Charlotte’s ball-following onto this robot behind a switch that’s off by default."]},
   }},
 
- {n:10, start:"2026-12-21", phase:"break", brk:true, title:"Winter break",
+ {n:15, start:"2026-12-21", phase:"break", brk:true, title:"Winter break",
   goal:"Optional. Rest, write the portfolio, or study how top teams play.",
   why:"Rest is part of the plan. If the lab opens Sat Jan 2, use it for driver practice on rc1.",
   build:["If the lab opens: install the spares you ordered, but nothing that changes how the robot works."],
@@ -551,7 +566,7 @@ export const WEEKS_B: RawWeek[] = [
   behind:"There is no behind. Rest.",
   learn:["pratt"]},
 
- {n:11, start:"2027-01-04", phase:"qual", title:"Last fixes, then freeze",
+ {n:16, start:"2027-01-04", phase:"qual", title:"Last fixes, then freeze",
   goal:"Shake off break, run full matches on rc1, fix only what they show, and freeze Friday Jan 8.",
   why:"A full school week before the qualifier is a gift. Spend it on reliability, not features.",
   build:[
@@ -598,7 +613,7 @@ export const WEEKS_B: RawWeek[] = [
   trap:["“Just one more feature” because there’s a week left.","Swapping a part that works because a new one looks better."],
   learn:["sdk"]},
 
- {n:12, start:"2027-01-11", phase:"qual", title:"Qualifier week: practice, don’t build",
+ {n:17, start:"2027-01-11", phase:"qual", title:"Qualifier week: practice, don’t build",
   goal:"No new mechanisms and no new code. Drivers practice every session, the robot is packed, and you can reinstall offline in five minutes.",
   why:"At a first qualifier, reliability and driver practice win more matches than features.",
   event:"NC qualifier, Sat Jan 16.",
@@ -644,7 +659,7 @@ export const WEEKS_B: RawWeek[] = [
   trap:["Updating the SDK, Limelight OS or a library this week. Limelight updates can wipe pipelines.","A last-minute mechanical “improvement”."],
   learn:["sdk","rules"]},
 
- {n:13, start:"2027-01-18", phase:"post", title:"Debrief with data",
+ {n:18, start:"2027-01-18", phase:"post", title:"Debrief with data",
   goal:"Pick the three improvements that will score the most, using evidence.",
   why:"After an event, everyone has opinions. Match data settles them.",
   build:[
@@ -681,7 +696,7 @@ export const WEEKS_B: RawWeek[] = [
    },
   }},
 
- {n:14, start:"2027-01-25", phase:"post", title:"Auto: one more cycle",
+ {n:19, start:"2027-01-25", phase:"post", title:"Auto: one more cycle",
   goal:"Add a pickup-and-score cycle without making Auto less reliable.",
   why:"A second Auto cycle is often the biggest point gain after a first event.",
   build:[
@@ -711,7 +726,7 @@ export const WEEKS_B: RawWeek[] = [
   trap:["Deleting the Auto that worked."],
   learn:["pedro"]},
 
- {n:15, start:"2027-02-01", phase:"post", title:"Faster, but only where it pays",
+ {n:20, start:"2027-02-01", phase:"post", title:"Faster, but only where it pays",
   goal:"Cut cycle time where the data shows the biggest loss, without losing hit rate.",
   why:"Now that shots land, speed is worth points. Measure before and after every change.",
   build:[
@@ -720,7 +735,7 @@ export const WEEKS_B: RawWeek[] = [
   ],
   motion:["Faster paths and driving routes from the data."],
   scoring:["Shorter feed and recovery times. Try shooting while moving only if tests show more points."],
-  both:["Rerun the week 5 shot test after every speed change."],
+  both:["Rerun the week 10 shot test after every speed change."],
   drive:[
    "Time cycles before and after every change.",
    "Practice around a defender: getting past, and holding position.",
@@ -751,7 +766,7 @@ export const WEEKS_B: RawWeek[] = [
    },
   }},
 
- {n:16, start:"2027-02-08", phase:"post", title:"Driver assist, then freeze again",
+ {n:21, start:"2027-02-08", phase:"post", title:"Driver assist, then freeze again",
   goal:"Make the drivers faster, then freeze, tag and prove an offline build before the next event.",
   why:"The best software makes drivers better. Ask them what slows them down, then lock it in.",
   build:[
@@ -759,7 +774,7 @@ export const WEEKS_B: RawWeek[] = [
   ],
   motion:["Aim assist the drivers can hold and release."],
   scoring:["Rumble or light cue when the shooter is ready."],
-  both:["Repeat the week 11 and 12 checklists: tag, offline build, rollback, pit list."],
+  both:["Repeat the week 16 and 17 checklists: tag, offline build, rollback, pit list."],
   drive:["Drivers ask for, test and approve every assist. Anything they don’t trust gets cut."],
   outreach:[
    "Update the portfolio and the award talk track for the next event.",

@@ -459,7 +459,7 @@ export const QUESTS: Quest[] = [
     level: 1,
     mins: 20,
     blurb: "A table of every motor, servo and sensor: its name in code, its port, and what it does.",
-    why: "This is a Week 1 task for the team and the thing that breaks most often when builders and coders disagree.",
+    why: "This is a Week 6 task for the team and the thing that breaks most often when builders and coders disagree.",
     steps: [
       "Ask a builder for the list of motors, servos and sensors on the robot (or the plan if it isn’t built).",
       "Make a table with these columns: name in code, type, port, what it does.",
@@ -538,7 +538,7 @@ export const QUESTS: Quest[] = [
     level: 2,
     mins: 35,
     blurb: "Write how your team wants to score, what Auto does and what you won’t do.",
-    why: "A written strategy is the first thing in Week 1’s plan and makes every later decision faster.",
+    why: "A written strategy is the first thing in Week 6’s plan and makes every later decision faster.",
     steps: [
       "Read the one-page game description and the tip rules in the manual.",
       "Write: what we do in Auto, what we do in TeleOp, what we’re choosing not to do.",
