@@ -150,9 +150,9 @@ function SignInGate({ week }: { week: number }) {
   }, []);
 
   return (
-    <section className="gate">
+    <section className="signin-gate">
       <Shapes variant="hero" />
-      <div className="gate-card">
+      <div className="signin-card">
         <div className="eyebrow">Trinity Robotics · FTC 2026–27 · BIOBUZZ</div>
         <h1>Sign in</h1>
         <p>Use the Google account Trinity School gave you. Next you’ll choose your team and what you work on.</p>
@@ -163,7 +163,7 @@ function SignInGate({ week }: { week: number }) {
         <p className="muted small center">Use your Trinity School Google account.</p>
         {googleOn === false && <p className="muted small center">Google sign-in isn’t configured on this server yet.</p>}
       </div>
-      <Link className="gate-peek" href={`/week/${week}`}>
+      <Link className="signin-peek" href={`/week/${week}`}>
         Look at this week’s plan
       </Link>
     </section>
