@@ -172,7 +172,7 @@ export function HiveView() {
                 </tr>
               </tbody>
             </table>
-            <p className="note">XP is just a way to see effort add up. The real score is the robot working on Thursday.</p>
+            <p className="note">XP is just a way to see effort add up. The real score is the robot working.</p>
           </section>
         </div>
       </div>

@@ -327,7 +327,7 @@ function DemoGate({ w }: { w: Week }) {
     <div className="tab-panel two">
       <section className="card demo">
         <div className="gh">
-          <div className="label">{w.brk ? "Optional · tick what you did" : "Thursday demo · done when · tick only what you showed"}</div>
+          <div className="label">{w.brk ? "Optional · tick what you did" : "Done when · tick what you showed"}</div>
           <Pill tone={dt > 0 && dc === dt ? "full" : late ? "late" : undefined}>
             {dc}/{dt}
           </Pill>

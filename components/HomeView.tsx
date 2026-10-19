@@ -11,7 +11,7 @@ import { Cta, Shapes } from "./ui";
 import { PACE_COPY, daysTo, pace } from "@/lib/progress";
 import { myTasks, openTasks } from "@/lib/pick";
 import { fmt, pd, plural } from "@/lib/time";
-import { phaseOf, qualifier, wEnd, wStart } from "@/lib/weeks";
+import { MILESTONES, phaseOf, qualifier, wEnd, wStart } from "@/lib/weeks";
 import { diffDays } from "@/lib/time";
 
 export function Hero() {
@@ -38,11 +38,15 @@ export function Hero() {
       </>
     );
   } else {
-    const di = clock.dow;
-    const demo = di < 3 ? `Demo day is Thursday, in ${plural(3 - di, "day")}.` : di === 3 ? "Today is demo day." : "Demo day has passed. Whatever isn’t ticked carries over.";
+    const next = MILESTONES.find(m => pd(m.date) >= clock.today);
+    const milestone = !next
+      ? "The last dated milestone has passed."
+      : daysTo(pd(next.date), clock) === 0
+        ? `${next.name} is today.`
+        : `${next.name} is ${fmt(pd(next.date))}, in ${plural(daysTo(pd(next.date), clock), "day")}.`;
     sub = (
       <>
-        <b>{p.name}</b> · {fmt(wStart(w))} – {fmt(wEnd(w))} · {demo}
+        <b>{p.name}</b> · {fmt(wStart(w))} – {fmt(wEnd(w))} · {milestone}
       </>
     );
   }

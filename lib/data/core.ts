@@ -129,8 +129,8 @@ export const VISION_NOTE: Record<TeamId, string> = {
 // Stages of the season (the pizza-tracker steps).
 export const PHASES: Phase[] = [
   {id:"reveal", name:"Since the reveal", short:"Reveal", color:"--p-reveal", blurb:"BIOBUZZ came out Sept 12. These five weeks already happened. The written plan starts Oct 19."},
-  {id:"sprint", name:"Sprint to Robot Day", short:"Sprint", color:"--p-sprint", blurb:"Two weeks to build v1, write every subsystem, and hand a working robot to coders and drivers on Sunday Nov 1."},
-  {id:"bring", name:"Bring-up", short:"Bring-up", color:"--p-bring", blurb:"Drivers driving by day three. Then motion and scoring run in parallel while builders harden the robot from what drivers and coders find."},
+  {id:"sprint", name:"Sprint to Robot Day", short:"Sprint", color:"--p-sprint", blurb:"The target for Sunday Nov 1 is a wood robot that drives, intakes and shoots, handed to software. A part that works in wood gets cut in aluminum. If the wood robot slips, software keeps going on the test robot."},
+  {id:"bring", name:"Bring-up", short:"Bring-up", color:"--p-bring", blurb:"Drivers on the wood robot as soon as it drives. Mechanisms that proved themselves in wood get cut in aluminum one at a time, not all on one day."},
   {id:"aim", name:"Aim and integrate", short:"Aim", color:"--p-aim", blurb:"Turret, camera and one-button scoring come together. Accuracy from fixed spots must already work."},
   {id:"scrim", name:"Scrimmage", short:"Scrimmage", color:"--p-scrim", blurb:"The dress rehearsal. Play full matches, find every failure, fix the top three, tag a release candidate before break."},
   {id:"break", name:"Winter break", short:"Break", color:"--p-break", blurb:"Optional. rc1 is tagged and the robot has a home. Rest, write the portfolio, or study top teams."},

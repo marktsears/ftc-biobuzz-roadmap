@@ -200,9 +200,7 @@ function Rails() {
             </li>
             <li>
               <b>Thursday</b>
-              <span>
-                <b>Demo day.</b> Show every “Done when” box. Tick only what you showed. Triage the driver wish list. Each team shares one thing it learned with the other team.
-              </span>
+              <span>Keep working. There is no weekly show. Tick a “Done when” box when you can show it. The real stops are the milestones, starting with the wood robot on Nov 1.</span>
             </li>
             <li>
               <b>Friday</b>
