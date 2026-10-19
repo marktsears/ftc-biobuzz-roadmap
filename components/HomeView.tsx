@@ -92,7 +92,7 @@ function NextMoves() {
           <button type="button" className="link-btn" onClick={openProfile}>
             Sign in
           </button>{" "}
-          with your Trinity Google account to grab a task.
+          to grab a task.
         </p>
       )}
       {mine.length > 0 && (

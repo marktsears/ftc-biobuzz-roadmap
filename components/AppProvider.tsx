@@ -140,6 +140,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBooted(true);
   }, []);
 
+  /* After Google returns, ask for team and focus once per account. */
+  const setupAsked = useRef(false);
+  useEffect(() => {
+    if (!booted || status !== "authenticated" || !email) return;
+    try {
+      if (localStorage.getItem("tr-setup:" + email.toLowerCase())) return;
+    } catch {
+      return;
+    }
+    if (setupAsked.current) return;
+    setupAsked.current = true;
+    setProfileOpen(true);
+  }, [booted, status, email]);
+
   /* ----- keep "today" fresh while the tab stays open ----- */
   useEffect(() => {
     if (preview) return;

@@ -68,14 +68,16 @@ export function Header() {
         </nav>
 
         <div className="head-tools">
-          <div className="seg" role="group" aria-label="Choose your team">
-            {TEAM_IDS.map(t => (
-              <button key={t} type="button" aria-pressed={team === t} onClick={() => setTeam(t as TeamId)}>
-                {t}
-              </button>
-            ))}
-          </div>
-          <button type="button" className="me-chip" onClick={openProfile} aria-label={person ? `You are ${person}. Open your profile` : "Sign in with Google"}>
+          {person && (
+            <div className="seg" role="group" aria-label="Choose your team">
+              {TEAM_IDS.map(t => (
+                <button key={t} type="button" aria-pressed={team === t} onClick={() => setTeam(t as TeamId)}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+          <button type="button" className={person ? "me-chip" : "signin-cta"} onClick={openProfile} aria-label={person ? `You are ${person}. Open your account` : "Sign in with Google"}>
             {person ? (
               <>
                 <Avatar name={person} size={30} />
@@ -84,9 +86,7 @@ export function Header() {
                 </span>
               </>
             ) : (
-              <span className="me-text">
-                <b>Sign in</b>
-              </span>
+              "Sign in"
             )}
           </button>
         </div>
@@ -129,6 +129,21 @@ export function BottomNav() {
         </button>
       </nav>
     </>
+  );
+}
+
+export function SignInBar() {
+  const { person, openProfile } = useApp();
+  if (person) return null;
+  return (
+    <div className="signin-bar">
+      <div className="wrap">
+        <p>Sign in with your Trinity Google account to tick tasks and do quests.</p>
+        <button type="button" onClick={openProfile}>
+          Sign in
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -183,11 +198,39 @@ const FOCUS: { code: Focus; label: string }[] = [
   { code: "O", label: TRACKS.O.short },
 ];
 
+function setupKey(email: string) {
+  return "tr-setup:" + email.toLowerCase();
+}
+
+function GoogleMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.33A9 9 0 0 0 9 18z" />
+      <path fill="#FBBC05" d="M3.98 10.72A5.4 5.4 0 0 1 3.7 9c0-.6.1-1.18.28-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3.02-2.33z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.02 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
+    </svg>
+  );
+}
+
 export function ProfileDialog() {
   const { profileOpen, closeProfile, person, email, team, setTeam, focus, setFocus, code, setCode, state, preview, setPreview, offline } = useApp();
   const ref = useRef<HTMLDialogElement>(null);
   const [pv, setPv] = useState(preview ?? "");
   const [googleOn, setGoogleOn] = useState<boolean | null>(null);
+  const [setupDone, setSetupDone] = useState(true);
+
+  useEffect(() => {
+    if (!email) {
+      setSetupDone(true);
+      return;
+    }
+    try {
+      setSetupDone(localStorage.getItem(setupKey(email)) === "1");
+    } catch {
+      setSetupDone(false);
+    }
+  }, [email, profileOpen]);
 
   useEffect(() => {
     const d = ref.current;
@@ -195,23 +238,37 @@ export function ProfileDialog() {
     if (profileOpen && !d.open) {
       setPv(preview ?? "");
       d.showModal();
-      fetch("/api/auth/providers")
-        .then(r => r.json())
-        .then(p => setGoogleOn(!!p?.google))
-        .catch(() => setGoogleOn(false));
+      if (!person) {
+        fetch("/api/auth/providers")
+          .then(r => r.json())
+          .then(p => setGoogleOn(!!p?.google))
+          .catch(() => setGoogleOn(false));
+      }
     }
     if (!profileOpen && d.open) d.close();
-  }, [profileOpen, preview]);
+  }, [profileOpen, preview, person]);
 
-  const save = () => {
+  const finishSetup = () => {
+    if (email) {
+      try {
+        localStorage.setItem(setupKey(email), "1");
+      } catch {}
+    }
+    setSetupDone(true);
+    closeProfile();
+  };
+
+  const saveAccount = () => {
     if (pv !== (preview ?? "")) setPreview(pv || null);
     closeProfile();
   };
 
+  const mode = !person ? "signin" : setupDone ? "account" : "setup";
+
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={`dialog ${mode === "signin" ? "signin" : ""}`}
       onClose={closeProfile}
       onClick={e => {
         if (e.target === ref.current) closeProfile();
@@ -222,93 +279,122 @@ export function ProfileDialog() {
         method="dialog"
         onSubmit={e => {
           e.preventDefault();
-          save();
+          if (mode === "setup") finishSetup();
+          else if (mode === "account") saveAccount();
         }}
       >
         <div className="dialog-head">
           <div>
-            <div className="eyebrow">Trinity Robotics</div>
-            <h2 id="profile-title">{person ? `Hi, ${person}` : "Sign in"}</h2>
+            <div className="eyebrow">{mode === "account" ? "Your account" : mode === "setup" ? "Step 2 of 2" : "Step 1 of 2"}</div>
+            <h2 id="profile-title">{mode === "signin" ? "Sign in" : mode === "setup" ? `Hi, ${person}` : person}</h2>
           </div>
           <button type="button" className="icon-btn" onClick={closeProfile} aria-label="Close">
             <Icon name="x" />
           </button>
         </div>
-        {person ? (
-          <p className="muted">
-            Signed in{email ? ` as ${email}` : ""}. Your name on ticks comes from your Trinity Google account.
-          </p>
-        ) : (
+
+        {mode === "signin" && (
           <>
-            <p className="muted">Use the Google account Trinity School gave you. That’s how the team sees who did what.</p>
+            <p className="muted">Use the Google account Trinity School gave you. Next you’ll choose your team.</p>
             <button type="button" className="google-btn" disabled={googleOn === false} onClick={() => signIn("google")}>
-              Sign in with Google
+              <GoogleMark />
+              Continue with Google
             </button>
+            <p className="muted small center">Trinity accounts only.</p>
             {googleOn === false && <p className="muted small">Google sign-in isn’t configured on this server yet.</p>}
           </>
         )}
 
-        <div className="field">
-          <span>Your team</span>
-          <div className="seg wide" role="group" aria-label="Your team">
-            {TEAM_IDS.map(t => (
-              <button key={t} type="button" aria-pressed={team === t} onClick={() => setTeam(t)}>
-                Team {t}
+        {mode === "setup" && (
+          <>
+            <p className="muted">{email ? `Signed in as ${email}. ` : ""}Which team are you on?</p>
+            <div className="field">
+              <span>Your team</span>
+              <div className="seg wide" role="group" aria-label="Your team">
+                {TEAM_IDS.map(t => (
+                  <button key={t} type="button" aria-pressed={team === t} onClick={() => setTeam(t)}>
+                    Team {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="field">
+              <span>What do you mostly work on?</span>
+              <div className="chips">
+                {FOCUS.map(f => (
+                  <button key={f.code} type="button" className={`chip ${focus === f.code ? "on" : ""}`} aria-pressed={focus === f.code} onClick={() => setFocus(f.code)}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <small className="muted">This only changes what we show first. You can still see everything.</small>
+            </div>
+            <div className="dialog-foot end">
+              <button type="submit" className="cta solid">
+                <span>Continue</span>
+                <i className="cta-dot" aria-hidden="true">
+                  <Icon name="arrow" size={16} />
+                </i>
               </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="field">
-          <span>What do you mostly work on?</span>
-          <div className="chips">
-            {FOCUS.map(f => (
-              <button key={f.code} type="button" className={`chip ${focus === f.code ? "on" : ""}`} aria-pressed={focus === f.code} onClick={() => setFocus(f.code)}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <small className="muted">This only decides what we show first. You can see everything.</small>
-        </div>
-
-        {state.locked && (
-          <label className="field">
-            <span>
-              <Icon name="lock" size={14} /> Team code
-            </span>
-            <input value={code} onChange={e => setCode(e.target.value)} placeholder="Ask your coach" autoComplete="off" />
-          </label>
+            </div>
+          </>
         )}
 
-        <details className="adv">
-          <summary>Extras</summary>
-          <label className="field">
-            <span>Preview the plan as if today were…</span>
-            <input type="date" value={pv} onChange={e => setPv(e.target.value)} />
-          </label>
-          <p className="muted small">
-            {state.mode === "local" ? "Saving to this browser only." : state.mode === "file" ? "Saving to a file on this computer (development)." : "Saving to the team’s shared database."}
-            {offline ? " Can’t reach the server right now." : ""}
-          </p>
-        </details>
-
-        <div className="dialog-foot">
-          {person ? (
-            <button type="button" className="link-btn" onClick={() => signOut()}>
-              Sign out
-            </button>
-          ) : (
-            <button type="button" className="link-btn" onClick={closeProfile}>
-              Just looking
-            </button>
-          )}
-          <button type="submit" className="cta solid">
-            <span>Save</span>
-            <i className="cta-dot" aria-hidden="true">
-              <Icon name="arrow" size={16} />
-            </i>
-          </button>
-        </div>
+        {mode === "account" && (
+          <>
+            {email && <p className="muted">{email}</p>}
+            <div className="field">
+              <span>Your team</span>
+              <div className="seg wide" role="group" aria-label="Your team">
+                {TEAM_IDS.map(t => (
+                  <button key={t} type="button" aria-pressed={team === t} onClick={() => setTeam(t)}>
+                    Team {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="field">
+              <span>What do you mostly work on?</span>
+              <div className="chips">
+                {FOCUS.map(f => (
+                  <button key={f.code} type="button" className={`chip ${focus === f.code ? "on" : ""}`} aria-pressed={focus === f.code} onClick={() => setFocus(f.code)}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {state.locked && (
+              <label className="field">
+                <span>
+                  <Icon name="lock" size={14} /> Team code
+                </span>
+                <input value={code} onChange={e => setCode(e.target.value)} placeholder="Ask your coach" autoComplete="off" />
+              </label>
+            )}
+            <details className="adv">
+              <summary>Preview a date</summary>
+              <label className="field">
+                <span>Show the plan as if today were…</span>
+                <input type="date" value={pv} onChange={e => setPv(e.target.value)} />
+              </label>
+              <p className="muted small">
+                {state.mode === "local" ? "Saving to this browser only." : state.mode === "file" ? "Saving to a file on this computer (development)." : "Saving to the team’s shared database."}
+                {offline ? " Can’t reach the server right now." : ""}
+              </p>
+            </details>
+            <div className="dialog-foot">
+              <button type="button" className="link-btn" onClick={() => signOut()}>
+                Sign out
+              </button>
+              <button type="submit" className="cta solid">
+                <span>Done</span>
+                <i className="cta-dot" aria-hidden="true">
+                  <Icon name="arrow" size={16} />
+                </i>
+              </button>
+            </div>
+          </>
+        )}
       </form>
     </dialog>
   );

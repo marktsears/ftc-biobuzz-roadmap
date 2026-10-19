@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Montserrat, Source_Serif_4 } from "next/font/google";
 import { Providers } from "@/components/Providers";
-import { BottomNav, Footer, Header, PreviewBar, ProfileDialog, Ready, Toasts } from "@/components/Shell";
+import { BottomNav, Footer, Header, PreviewBar, ProfileDialog, Ready, SignInBar, Toasts } from "@/components/Shell";
 import "./globals.css";
 
 // Trinity School's site is set in a classical serif. These are free stand-ins with the same feel.
@@ -24,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Skip to content
           </a>
           <Header />
+          <SignInBar />
           <PreviewBar />
           <main id="main">
             <Ready>{children}</Ready>
