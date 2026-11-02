@@ -69,14 +69,56 @@ export function fileStore(): Store {
     setClaim: (team, id, name, on) => teamOp(team, { op: "claim", id, on }, name),
     setBudget: (team, rows) => teamOp(team, { op: "budget", rows }, ""),
 
-    touchPerson: ({ email, name, team, focus }) =>
-      mutate(d => {
+    async touchPerson({ email, name, team, focus }) {
+      let created = false;
+      await mutate(d => {
         const was = d.people[email];
-        d.people[email] = { email, name, team: team ?? was?.team ?? null, focus: focus ?? was?.focus ?? null, seen: now() };
-      }),
-    async students() {
-      return Object.values((await load()).people).sort((a, b) => a.name.localeCompare(b.name));
+        created = !was;
+        d.people[email] = { email, name, team: team ?? was?.team ?? null, focus: focus ?? was?.focus ?? null, seen: now(), listed: !!was?.listed };
+      });
+      return created;
     },
+    async students() {
+      return Object.values((await load()).people)
+        .map(p => ({ ...p, seen: p.seen ?? null, listed: !!p.listed }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    async addStudents(rows) {
+      const made: string[] = [];
+      await mutate(d => {
+        for (const r of rows) {
+          const was = d.people[r.email];
+          if (!was) {
+            made.push(r.email);
+            d.people[r.email] = { email: r.email, name: r.name, team: r.team, focus: null, seen: null, listed: true };
+          } else {
+            d.people[r.email] = { ...was, listed: true, team: was.team ?? r.team, name: was.seen ? was.name : r.name };
+          }
+        }
+      });
+      return made;
+    },
+    updateStudents: (emails, patch) =>
+      mutate(d => {
+        for (const e of emails) {
+          const p = d.people[e];
+          if (!p) continue;
+          if (patch.team !== undefined) p.team = patch.team;
+          if (patch.listed !== undefined) p.listed = patch.listed;
+        }
+      }),
+    removeStudents: emails =>
+      mutate(d => {
+        for (const e of emails) {
+          const p = d.people[e];
+          if (!p) continue;
+          if (p.seen) p.listed = false;
+          else {
+            delete d.people[e];
+            d.assignments = d.assignments.filter(a => a.email !== e);
+          }
+        }
+      }),
 
     async assignments(email) {
       const all = (await load()).assignments;
@@ -141,7 +183,7 @@ export function fileStore(): Store {
 
     async settings() {
       const s = (await load()).settings;
-      return { flags: readFlags(s.flags), admins: s.admins ?? [] };
+      return { flags: readFlags(s.flags), admins: s.admins ?? [], starter: s.starter ?? [] };
     },
     saveSettings: patch =>
       mutate(d => {

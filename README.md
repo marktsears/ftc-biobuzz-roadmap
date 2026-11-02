@@ -36,7 +36,13 @@ Google sign-in is limited to the Trinity School Workspace domain (`tsdch.org`, i
 3. Set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in Vercel (and in `.env.local` for local testing).
 4. If a student sees “admin approval required”, a Trinity Workspace admin has to allow the app once.
 
-`msears@gmail.com` is always a coach. Add more coaches on **Coach → Labs → Coaches**, or with `AUTH_ADMIN_EMAILS`. Students show up on the roster after they sign in once.
+`msears@gmail.com` is always a coach. Add more coaches on **Coach → Labs → Coaches**, or with `AUTH_ADMIN_EMAILS`.
+
+### Adding students
+
+On **Coach → Class → Add students**, paste school emails in any shape (a sheet column, an email's To: line, one per line) and pick a team. Students are on the roster right away as "hasn't signed in yet", and you can assign them quests. There's no invite to accept: when they sign in with their school Google account, everything is already there, and they skip the team question if you set it. The second step gives you a message to post in Classroom and a QR code for the projector; the site doesn't send email.
+
+**Your quests → Starter quests** go to every new student, added or not. Students who sign in without being added show up under "Not on your list".
 
 ## How state is stored
 

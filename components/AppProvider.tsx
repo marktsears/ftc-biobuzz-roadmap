@@ -157,20 +157,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBooted(true);
   }, []);
 
-  /* After Google returns, ask for team and focus once per account. */
-  const setupAsked = useRef(false);
-  useEffect(() => {
-    if (!booted || status !== "authenticated" || !email) return;
-    try {
-      if (localStorage.getItem("tr-setup:" + email.toLowerCase())) return;
-    } catch {
-      return;
-    }
-    if (setupAsked.current) return;
-    setupAsked.current = true;
-    setProfileOpen(true);
-  }, [booted, status, email]);
-
   /* ----- keep "today" fresh while the tab stays open ----- */
   useEffect(() => {
     if (preview) return;
@@ -235,17 +221,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMine(data);
       /* this browser may have last been used by someone else, so the saved team and focus win at sign-in */
       const p = data.profile;
-      if (p && p.email === emailRef.current && syncedRef.current !== p.email) {
-        syncedRef.current = p.email;
-        if (p.team) {
+      const who = emailRef.current;
+      if (who && syncedRef.current !== who && (p ? p.email === who : !data.db)) {
+        syncedRef.current = who;
+        if (p?.team) {
           LS.set("tr-team", p.team);
           setTeamS(p.team);
         }
-        if (p.focus) {
+        if (p?.focus) {
           LS.set("tr-focus", p.focus);
           setFocusS(p.focus);
         }
-        setSyncedFor(p.email);
+        setSyncedFor(who);
       }
     } catch {
       // keep what we had; the defaults hide the team tools
@@ -264,6 +251,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!booted || !person || !mine.db || !email || syncedFor !== email) return;
     void fetch("/api/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ op: "profile", team, focus }) }).catch(() => undefined);
   }, [booted, person, mine.db, email, syncedFor, team, focus]);
+
+  /* After Google returns, ask for team and focus once per account, unless the coach already put them on a team. */
+  const setupAsked = useRef(false);
+  const coachTeam = mine.profile?.team ?? null;
+  useEffect(() => {
+    if (!booted || status !== "authenticated" || !email || syncedFor !== email || setupAsked.current) return;
+    const key = "tr-setup:" + email.toLowerCase();
+    try {
+      if (localStorage.getItem(key)) return;
+      setupAsked.current = true;
+      if (coachTeam) localStorage.setItem(key, "1");
+      else setProfileOpen(true);
+    } catch {}
+  }, [booted, status, email, syncedFor, coachTeam]);
 
   useEffect(() => {
     if (!booted) return;

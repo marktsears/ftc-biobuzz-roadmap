@@ -4448,6 +4448,223 @@ table {
 .admin-add input {
   max-width: 320px;
 }
+
+/* ----- adding and inviting students ----- */
+.roster-add {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.roster-empty {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 20px;
+  border: 2px dashed var(--line);
+  border-radius: 16px;
+  color: var(--navy);
+}
+.roster-empty p {
+  margin: 4px 0 0;
+}
+@media (max-width: 640px) {
+  .roster-empty {
+    grid-template-columns: 1fr;
+  }
+}
+.waiting-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--gold-3);
+  color: var(--gold-ink);
+  font-size: 15px;
+}
+.waiting-note span {
+  margin-right: auto;
+}
+.rrow.waiting .avatar {
+  opacity: 0.45;
+}
+.not-yet {
+  justify-self: start;
+  margin-top: 3px;
+  font-family: var(--font-u);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 9px;
+  background: var(--gold-3);
+  color: var(--gold-ink);
+}
+.bulk-move {
+  display: flex;
+  gap: 16px;
+}
+.btn.danger {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+}
+.bulk-bar .btn.danger {
+  border-color: var(--white);
+}
+.dialog.wide-dialog {
+  width: min(760px, 100% - 24px);
+  padding: 26px 28px 22px;
+}
+.dialog.wide-dialog form {
+  padding: 0;
+}
+.paste-check {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--ice);
+}
+.paste-check p {
+  margin: 0;
+}
+.paste-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  max-height: 132px;
+  overflow: auto;
+}
+.paste-names li {
+  margin: 0;
+  font-family: var(--font-u);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--white);
+  color: var(--navy);
+  border: 1px solid var(--line);
+}
+.paste-bad {
+  color: var(--red);
+  overflow-wrap: anywhere;
+}
+.invite {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: 22px;
+  align-items: start;
+  margin-top: 8px;
+}
+.invite textarea {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.invite-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.invite-qr {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+  padding-top: 26px;
+}
+.invite-qr .qr {
+  width: 168px;
+  height: 168px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+@media (max-width: 640px) {
+  .invite {
+    grid-template-columns: 1fr;
+  }
+}
+.projector {
+  border: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  background: var(--navy);
+  color: var(--white);
+  cursor: pointer;
+}
+.projector::backdrop {
+  background: var(--navy);
+}
+.pj-inner {
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6vw;
+  align-items: center;
+  justify-content: center;
+  padding: 4vw;
+}
+.pj-inner .qr {
+  width: min(62vh, 44vw);
+  height: auto;
+  border-radius: 24px;
+}
+.pj-url {
+  font-family: var(--font-d);
+  font-size: clamp(36px, 5.4vw, 88px);
+  line-height: 1.05;
+  margin: 0 0 18px;
+  color: var(--gold);
+  overflow-wrap: anywhere;
+}
+.pj-how {
+  font-size: clamp(20px, 2.2vw, 34px);
+  max-width: 22ch;
+  margin: 0 0 28px;
+}
+.pj-close {
+  font-family: var(--font-u);
+  font-size: 13px;
+  opacity: 0.6;
+  margin: 0;
+}
+.starter-list {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.starter-list li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+}
+.starter-list .icon-btn {
+  width: 28px;
+  height: 28px;
+  background: var(--ice);
+  color: var(--navy);
+}
+.starter-empty p {
+  margin: 10px 0 4px;
+}
+.starter-empty .link-btn {
+  text-align: left;
+}
 @media print {
   .bulk-bar,
   .labs-bar {

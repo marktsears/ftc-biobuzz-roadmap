@@ -183,13 +183,18 @@ export interface Student {
   name: string;
   team: TeamId | null;
   focus: Focus | null;
-  seen: string;
+  /** null until they sign in for the first time */
+  seen: string | null;
+  /** on the coach's class list. False for someone who signed in without being added. */
+  listed: boolean;
 }
 
 export interface Settings {
   flags: Flags;
   /** admins added from Labs, on top of the ones in code */
   admins: string[];
+  /** quests every new student gets */
+  starter: string[];
 }
 
 /** What /api/me returns. */

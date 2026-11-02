@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "./AppProvider";
+import { AddStudents, InviteDialog } from "./ClassInvite";
 import { KIND_ICON } from "./kindIcon";
 import { StatusPill, statusOf } from "./QuestStatus";
 import { Avatar, Icon, Shapes } from "./ui";
@@ -117,11 +118,19 @@ export function CoachView() {
 function ClassTab({ data, post }: { data: CoachState; post: Post }) {
   const { clock, questById, toast } = useApp();
   const [week, setWeek] = useState(clock.before ? 1 : clock.now);
-  const [team, setTeam] = useState<TeamId | "all">("all");
+  const [team, setTeam] = useState<TeamId | "all" | "none">("all");
   const [find, setFind] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<string | null>(null);
   const [assignTo, setAssignTo] = useState<string[] | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  const listed = data.students.filter(s => s.listed);
+  const unlisted = data.students.filter(s => !s.listed);
+  const waiting = listed.filter(s => !s.seen);
+  const teamChips: (TeamId | "all" | "none")[] = ["all", ...TEAM_IDS, ...(listed.some(s => !s.team) ? ["none" as const] : [])];
 
   const byEmail = useMemo(() => {
     const m: Record<string, { work: Record<string, Work>; assigned: CoachState["assignments"] }> = {};
@@ -131,7 +140,25 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
     return m;
   }, [data]);
 
-  const students = data.students.filter(s => (team === "all" || s.team === team) && (!find.trim() || `${s.name} ${s.email}`.toLowerCase().includes(find.trim().toLowerCase())));
+  const students = listed.filter(
+    s => (team === "all" || (team === "none" ? !s.team : s.team === team)) && (!find.trim() || `${s.name} ${s.email}`.toLowerCase().includes(find.trim().toLowerCase())),
+  );
+  const pickedList = [...picked];
+  const bulk = async (body: Record<string, unknown>, done: string) => {
+    if (await post({ ...body, emails: pickedList })) {
+      toast("info", done);
+      setPicked(new Set());
+      setConfirmRemove(false);
+    }
+  };
+  const copyWaiting = async () => {
+    try {
+      await navigator.clipboard.writeText(waiting.map(s => s.email).join(", "));
+      toast("info", `Copied ${plural(waiting.length, "email")}`, "Paste them into the To: line of a reminder.");
+    } catch {
+      toast("error", "Couldn’t copy", waiting.map(s => s.email).join(", "));
+    }
+  };
   const nameOf = (email: string) => data.students.find(s => s.email === email)?.name ?? email;
 
   const needs = data.work
@@ -166,67 +193,166 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
 
       <section className="card roster" aria-labelledby="roster-h">
         <div className="strip-head wrap-row">
-          <h2 id="roster-h">Students</h2>
-          <div className="week-pick" role="group" aria-label="Week to assign for">
-            <button type="button" className="icon-btn" onClick={() => setWeek(w => Math.max(1, w - 1))} aria-label="Previous week">
-              <Icon name="left" size={16} />
+          <h2 id="roster-h">Students{listed.length ? ` · ${listed.length}` : ""}</h2>
+          <div className="roster-add">
+            <button type="button" className="btn" onClick={() => setInviting(true)}>
+              Invite
             </button>
-            <span>
-              Week {week}
-              {week === clock.now ? " · this week" : ""}
-            </span>
-            <button type="button" className="icon-btn" onClick={() => setWeek(w => w + 1)} aria-label="Next week">
-              <Icon name="arrow" size={16} />
+            <button type="button" className="cta solid" onClick={() => setAdding(true)}>
+              <span>Add students</span>
+              <i className="cta-dot" aria-hidden="true">
+                <Icon name="plus" size={16} />
+              </i>
             </button>
           </div>
-        </div>
-        <div className="roster-tools">
-          <div className="chips">
-            {(["all", ...TEAM_IDS] as (TeamId | "all")[]).map(t => (
-              <button key={t} type="button" className={`chip ${team === t ? "on" : ""}`} aria-pressed={team === t} onClick={() => setTeam(t)}>
-                {t === "all" ? "Both teams" : `Team ${t}`}
-              </button>
-            ))}
-          </div>
-          <input className="find" value={find} onChange={e => setFind(e.target.value)} placeholder="Find a student" aria-label="Find a student" />
         </div>
 
-        {data.students.length === 0 ? (
-          <p className="empty">Students show up here after they sign in once at trinity-robotics.vercel.app.</p>
+        {listed.length === 0 ? (
+          <div className="roster-empty">
+            <Icon name="users" size={28} />
+            <div>
+              <b>Start with your class list</b>
+              <p className="muted">Paste their school emails. You can give them quests right away, before anyone signs in. When they sign in with Google, everything is already there.</p>
+            </div>
+            <button type="button" className="cta solid" onClick={() => setAdding(true)}>
+              <span>Add students</span>
+              <i className="cta-dot" aria-hidden="true">
+                <Icon name="plus" size={16} />
+              </i>
+            </button>
+          </div>
         ) : (
-          <ul className="roster-list">
-            {students.map(s => (
-              <RosterRow
-                key={s.email}
-                s={s}
-                week={week}
-                info={byEmail[s.email]}
-                picked={picked.has(s.email)}
-                onPick={() => toggle(s.email)}
-                open={open === s.email}
-                onOpen={() => setOpen(o => (o === s.email ? null : s.email))}
-                onAssign={() => setAssignTo([s.email])}
-                post={post}
-              />
-            ))}
-          </ul>
+          <>
+            {waiting.length > 0 && (
+              <div className="waiting-note">
+                <span>
+                  <b>{plural(waiting.length, "student")}</b> {waiting.length === 1 ? "hasn’t" : "haven’t"} signed in yet.
+                </span>
+                <button type="button" className="link-btn" onClick={copyWaiting}>
+                  Copy their emails
+                </button>
+                <button type="button" className="link-btn" onClick={() => setInviting(true)}>
+                  See the invite
+                </button>
+              </div>
+            )}
+            <div className="roster-tools">
+              <div className="week-pick" role="group" aria-label="Week to assign for">
+                <button type="button" className="icon-btn" onClick={() => setWeek(w => Math.max(1, w - 1))} aria-label="Previous week">
+                  <Icon name="left" size={16} />
+                </button>
+                <span>
+                  Week {week}
+                  {week === clock.now ? " · this week" : ""}
+                </span>
+                <button type="button" className="icon-btn" onClick={() => setWeek(w => w + 1)} aria-label="Next week">
+                  <Icon name="arrow" size={16} />
+                </button>
+              </div>
+              <div className="chips">
+                {teamChips.map(t => (
+                  <button key={t} type="button" className={`chip ${team === t ? "on" : ""}`} aria-pressed={team === t} onClick={() => setTeam(t)}>
+                    {t === "all" ? "Both teams" : t === "none" ? "No team yet" : `Team ${t}`}
+                  </button>
+                ))}
+              </div>
+              <input className="find" value={find} onChange={e => setFind(e.target.value)} placeholder="Find a student" aria-label="Find a student" />
+            </div>
+
+              <ul className="roster-list">
+                {students.map(s => (
+                  <RosterRow
+                    key={s.email}
+                    s={s}
+                    week={week}
+                    info={byEmail[s.email]}
+                    picked={picked.has(s.email)}
+                    onPick={() => toggle(s.email)}
+                    open={open === s.email}
+                    onOpen={() => setOpen(o => (o === s.email ? null : s.email))}
+                    onAssign={() => setAssignTo([s.email])}
+                    post={post}
+                  />
+                ))}
+                {students.length === 0 && <p className="empty">Nobody matches. Try Both teams, or clear the search.</p>}
+              </ul>
+          </>
         )}
       </section>
 
+      {unlisted.length > 0 && (
+        <section className="card" aria-labelledby="unlisted-h">
+          <div className="strip-head">
+            <div>
+              <h2 id="unlisted-h">Not on your list</h2>
+              <p className="muted small">They signed in on their own. Add them to see them with your class.</p>
+            </div>
+            {unlisted.length > 1 && (
+              <button type="button" className="btn" onClick={() => post({ op: "listStudents", emails: unlisted.map(s => s.email) })}>
+                Add all {unlisted.length}
+              </button>
+            )}
+          </div>
+          <ul className="admin-list">
+            {unlisted.map(s => (
+              <li key={s.email}>
+                <span>
+                  <b>{s.name}</b>{" "}
+                  <small className="muted">
+                    {s.email} · {s.team ? `Team ${s.team}` : "no team"}
+                    {s.seen ? ` · seen ${ago(s.seen)}` : ""}
+                  </small>
+                </span>
+                <button type="button" className="btn sm" onClick={() => post({ op: "listStudents", emails: [s.email] })}>
+                  Add to class
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {picked.size > 0 && (
         <div className="bulk-bar" role="region" aria-label="Selected students">
-          <span>{plural(picked.size, "student")} picked</span>
-          <button type="button" className="link-btn light" onClick={() => setPicked(new Set())}>
-            Clear
-          </button>
-          <button type="button" className="cta solid" onClick={() => setAssignTo([...picked])}>
-            <span>Assign quests</span>
-            <i className="cta-dot" aria-hidden="true">
-              <Icon name="plus" size={16} />
-            </i>
-          </button>
+          {confirmRemove ? (
+            <>
+              <span>{removeLine(pickedList.map(e => data.students.find(s => s.email === e)))}</span>
+              <button type="button" className="link-btn light" onClick={() => setConfirmRemove(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn danger" onClick={() => bulk({ op: "removeStudents" }, `Removed ${plural(picked.size, "student")}`)}>
+                Remove
+              </button>
+            </>
+          ) : (
+            <>
+              <span>{plural(picked.size, "student")} picked</span>
+              <button type="button" className="link-btn light" onClick={() => setPicked(new Set())}>
+                Clear
+              </button>
+              <div className="bulk-move" role="group" aria-label="Move to team">
+                {TEAM_IDS.map(t => (
+                  <button key={t} type="button" className="link-btn light" onClick={() => bulk({ op: "moveStudents", team: t }, `Moved to Team ${t}`)}>
+                    Move to {t}
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="link-btn light" onClick={() => setConfirmRemove(true)}>
+                Remove
+              </button>
+              <button type="button" className="cta solid" onClick={() => setAssignTo(pickedList)}>
+                <span>Assign quests</span>
+                <i className="cta-dot" aria-hidden="true">
+                  <Icon name="plus" size={16} />
+                </i>
+              </button>
+            </>
+          )}
         </div>
       )}
+
+      {adding && <AddStudents data={data} post={post} team={team === "all" || team === "none" ? null : team} onClose={() => setAdding(false)} />}
+      {inviting && <InviteDialog onClose={() => setInviting(false)} />}
 
       {assignTo && (
         <QuestPicker
@@ -251,6 +377,14 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
 }
 
 const isUrl = (s: string) => /^https?:\/\/\S+$/.test(s.trim());
+
+function removeLine(list: (Student | undefined)[]) {
+  const who = plural(list.length, "student");
+  const signedIn = list.filter(s => s?.seen).length;
+  if (!signedIn) return `Remove ${who}? They haven’t signed in, so nothing is lost.`;
+  if (signedIn === list.length) return `Take ${who} off your list? Their progress is kept, under Not on your list.`;
+  return `Remove ${who}? Anyone who hasn’t signed in is deleted. The others keep their progress, under Not on your list.`;
+}
 
 function NeedRow({ w, name, q, post }: { w: Work & { email: string }; name: string; q?: Quest; post: Post }) {
   const [reply, setReply] = useState<"none" | "open">("none");
@@ -350,7 +484,7 @@ function RosterRow({
   const stuck = Object.values(info.work).some(w => w.status === "stuck");
   const others = Object.values(info.work).filter(w => !info.assigned.some(a => a.quest === w.quest));
   return (
-    <li className={`rrow ${open ? "open" : ""} ${stuck ? "has-stuck" : ""}`}>
+    <li className={`rrow ${open ? "open" : ""} ${stuck ? "has-stuck" : ""} ${s.seen ? "" : "waiting"}`}>
       <div className="rrow-top">
         <label className="rpick">
           <input type="checkbox" checked={picked} onChange={onPick} aria-label={`Pick ${s.name}`} />
@@ -361,8 +495,10 @@ function RosterRow({
             <b>{s.name}</b>
             <small>
               {s.team ? `Team ${s.team}` : "No team yet"}
-              {s.focus && s.focus !== "all" ? ` · ${TRACKS[s.focus].short}` : ""} · {plural(doneCount, "quest")} done · seen {ago(s.seen)}
+              {s.focus && s.focus !== "all" ? ` · ${TRACKS[s.focus].short}` : ""}
+              {s.seen ? ` · ${plural(doneCount, "quest")} done · seen ${ago(s.seen)}` : ""}
             </small>
+            {!s.seen && <span className="not-yet">Hasn’t signed in yet</span>}
           </span>
         </button>
         <div className="rweek">
@@ -434,6 +570,7 @@ function QuestPicker({
   data,
   onClose,
   onAssign,
+  starter,
 }: {
   emails: string[];
   names: string[];
@@ -441,11 +578,13 @@ function QuestPicker({
   data: CoachState;
   onClose: () => void;
   onAssign: (quests: string[], note: string) => Promise<boolean>;
+  /** pick the starter set instead of assigning */
+  starter?: string[];
 }) {
   const { allQuests } = useApp();
   const ref = useRef<HTMLDialogElement>(null);
   const [find, setFind] = useState("");
-  const [sel, setSel] = useState<string[]>([]);
+  const [sel, setSel] = useState<string[]>(starter ?? []);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -481,8 +620,8 @@ function QuestPicker({
       >
         <div className="dialog-head">
           <div>
-            <div className="eyebrow">Week {week}</div>
-            <h2 id="picker-h">Quests for {who}</h2>
+            <div className="eyebrow">{starter ? "Every new student gets these" : `Week ${week}`}</div>
+            <h2 id="picker-h">{starter ? "Starter quests" : `Quests for ${who}`}</h2>
           </div>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
             <Icon name="x" />
@@ -516,14 +655,16 @@ function QuestPicker({
             </div>
           ))}
         </div>
-        <label className="field">
-          <span>A note for {names.length === 1 ? "them" : "everyone"} (optional)</span>
-          <input value={note} onChange={e => setNote(e.target.value)} maxLength={200} placeholder="Start with this one. Bring it to me when you’re done." />
-        </label>
+        {!starter && (
+          <label className="field">
+            <span>A note for {names.length === 1 ? "them" : "everyone"} (optional)</span>
+            <input value={note} onChange={e => setNote(e.target.value)} maxLength={200} placeholder="Start with this one. Bring it to me when you’re done." />
+          </label>
+        )}
         <div className="dialog-foot">
-          <span className="muted small">{sel.length ? `${plural(sel.length, "quest")} picked` : "Pick one or more"}</span>
-          <button type="submit" className="cta solid" disabled={!sel.length || busy}>
-            <span>Assign</span>
+          <span className="muted small">{sel.length ? `${plural(sel.length, "quest")} picked${starter && sel.length > 3 ? ". Two or three is plenty for a first day." : ""}` : "Pick one or more"}</span>
+          <button type="submit" className="cta solid" disabled={(!starter && !sel.length) || busy}>
+            <span>{starter ? "Save" : "Assign"}</span>
             <i className="cta-dot" aria-hidden="true">
               <Icon name="check" size={16} />
             </i>
@@ -538,10 +679,72 @@ function QuestPicker({
 
 const KINDS = Object.keys(KIND_LABEL) as QuestKind[];
 
+/** one from each ladder a beginner can finish on day one */
+const SUGGESTED_STARTER = ["drive-watch-game", "cad-account", "code-java-warmup"];
+
+function StarterCard({ data, post }: { data: CoachState; post: Post }) {
+  const { questById, toast } = useApp();
+  const [picking, setPicking] = useState(false);
+  const ids = data.settings.starter;
+  const save = async (quests: string[]) => {
+    const ok = await post({ op: "starter", quests });
+    if (ok) toast("info", quests.length ? "Starter quests saved" : "No starter quests", quests.length ? "New students get these from now on." : "New students start with an empty list.");
+    return ok;
+  };
+  return (
+    <section className="card starter" aria-labelledby="starter-h">
+      <div className="strip-head">
+        <div>
+          <h2 id="starter-h">Starter quests</h2>
+          <p className="muted small">Every new student gets these on day one, whether you add them or they sign in on their own. Students who are already here don’t get them again.</p>
+        </div>
+        <button type="button" className="btn" onClick={() => setPicking(true)}>
+          {ids.length ? "Change" : "Pick quests"}
+        </button>
+      </div>
+      {ids.length ? (
+        <ol className="starter-list">
+          {ids.map(id => (
+            <li key={id}>
+              <Link href={`/quests/${id}`}>{questById(id)?.title ?? id}</Link>
+              <button type="button" className="icon-btn" aria-label="Take it out" title="Take it out" onClick={() => save(ids.filter(x => x !== id))}>
+                <Icon name="x" size={14} />
+              </button>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div className="starter-empty">
+          <p className="muted">None yet, so new students start with an empty Home.</p>
+          <button type="button" className="link-btn" onClick={() => save(SUGGESTED_STARTER.filter(id => questById(id)))}>
+            Use a first-day set: {SUGGESTED_STARTER.map(id => questById(id)?.title).filter(Boolean).join(", ")}
+          </button>
+        </div>
+      )}
+      {picking && (
+        <QuestPicker
+          emails={[]}
+          names={[]}
+          week={1}
+          data={data}
+          starter={ids}
+          onClose={() => setPicking(false)}
+          onAssign={async quests => {
+            const ok = await save(quests);
+            if (ok) setPicking(false);
+            return ok;
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
 function BankTab({ data, post }: { data: CoachState; post: Post }) {
   const [draft, setDraft] = useState<QuestDraft | null>(null);
   return (
     <>
+      <StarterCard data={data} post={post} />
       <section className="card">
         <div className="strip-head">
           <div>

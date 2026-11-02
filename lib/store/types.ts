@@ -19,8 +19,14 @@ export interface Store {
   setBudget(team: TeamId, rows: BudgetRow[]): Promise<void>;
 
   /* students */
-  touchPerson(p: { email: string; name: string; team?: TeamId | null; focus?: Focus | null }): Promise<void>;
+  /** a sign-in or a profile change. True if this is the first time we've heard of them. */
+  touchPerson(p: { email: string; name: string; team?: TeamId | null; focus?: Focus | null }): Promise<boolean>;
   students(): Promise<Student[]>;
+  /** the coach's paste. Puts everyone on the list; returns the emails that are new. */
+  addStudents(rows: { email: string; name: string; team: TeamId | null }[]): Promise<string[]>;
+  updateStudents(emails: string[], patch: { team?: TeamId | null; listed?: boolean }): Promise<void>;
+  /** never signed in: gone, with their assignments. Signed in: off the list, progress kept. */
+  removeStudents(emails: string[]): Promise<void>;
 
   /* assigned quests */
   assignments(email?: string): Promise<(Assignment & { email: string })[]>;

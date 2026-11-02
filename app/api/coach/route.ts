@@ -4,12 +4,14 @@ import { readFlags } from "@/lib/flags";
 import { fixedAdmins, isAdmin, normEmail } from "@/lib/identity";
 import { getStore } from "@/lib/store";
 import type { Store } from "@/lib/store/types";
-import type { CoachState, Settings } from "@/lib/types";
-import { getViewer, loadSettings, questExists } from "@/lib/viewer";
+import { isSchoolEmail, shortName } from "@/lib/roster";
+import { TEAM_IDS, type CoachState, type Settings, type TeamId } from "@/lib/types";
+import { getViewer, giveStarter, loadSettings, questExists } from "@/lib/viewer";
 
 export const dynamic = "force-dynamic";
 
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
+const emailList = (v: unknown) => [...new Set((Array.isArray(v) ? v : []).map(e => normEmail(String(e))).filter(e => e.includes("@")))].slice(0, 300);
 
 async function snapshot(store: Store, settings: Settings): Promise<CoachState> {
   const [people, assignments, work, custom] = await Promise.all([store.students(), store.assignments(), store.work(), store.customQuests()]);
@@ -88,6 +90,36 @@ export async function POST(req: Request) {
       case "archiveQuest":
         await store.archiveQuest(String(body.id ?? ""), body.archived !== false);
         break;
+      case "addStudents": {
+        const team = TEAM_IDS.includes(body.team as TeamId) ? (body.team as TeamId) : null;
+        const rows = (Array.isArray(body.students) ? body.students : [])
+          .slice(0, 300)
+          .map(r => ({ email: normEmail(String((r as { email?: unknown }).email ?? "")), name: (r as { name?: unknown }).name }))
+          .filter(r => isSchoolEmail(r.email) && !isAdmin(r.email, settings.admins))
+          .map(r => ({ email: r.email, name: shortName(typeof r.name === "string" ? r.name : null, r.email), team }));
+        if (!rows.length) return json({ error: "Paste at least one school email address." }, 400);
+        const fresh = await store.addStudents(rows);
+        if (body.starter !== false) await giveStarter(store, settings, fresh, v.name);
+        break;
+      }
+      case "moveStudents": {
+        const team = body.team === null ? null : TEAM_IDS.includes(body.team as TeamId) ? (body.team as TeamId) : undefined;
+        if (team === undefined) return json({ error: "Pick a team" }, 400);
+        await store.updateStudents(emailList(body.emails), { team });
+        break;
+      }
+      case "listStudents":
+        await store.updateStudents(emailList(body.emails), { listed: true });
+        break;
+      case "removeStudents":
+        await store.removeStudents(emailList(body.emails));
+        break;
+      case "starter": {
+        const ids = [...new Set((Array.isArray(body.quests) ? body.quests : []).map(String))].slice(0, 8);
+        for (const id of ids) if (!(await questExists(store, id))) return json({ error: `Unknown quest: ${id}` }, 400);
+        await store.saveSettings({ starter: ids });
+        break;
+      }
       default:
         return json({ error: "Unknown action" }, 400);
     }

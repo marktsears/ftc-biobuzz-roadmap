@@ -3,7 +3,7 @@ import { cleanQuest } from "@/lib/customQuest";
 import { getStore } from "@/lib/store";
 import type { Store } from "@/lib/store/types";
 import { TEAM_IDS, type Focus, type MeState, type Settings, type TeamId, type Work, type WorkStatus } from "@/lib/types";
-import { getViewer, loadSettings, questExists, type Viewer } from "@/lib/viewer";
+import { getViewer, giveStarter, loadSettings, questExists, type Viewer } from "@/lib/viewer";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +35,7 @@ export async function GET() {
     const store = getStore();
     const settings = await loadSettings(store);
     const v = await getViewer(settings);
-    if (store && v) await store.touchPerson({ email: v.email, name: v.name });
+    if (store && v && (await store.touchPerson({ email: v.email, name: v.name })) && !v.admin) await giveStarter(store, settings, [v.email]);
     return json(await snapshot(store, settings, v));
   } catch (e) {
     console.error("me read failed", e);

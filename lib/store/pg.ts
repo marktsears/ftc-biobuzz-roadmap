@@ -10,7 +10,9 @@ const SCHEMA = [
   `create table if not exists checks (team text not null, item_id text not null, by_name text not null, at timestamptz not null default now(), primary key (team, item_id))`,
   `create table if not exists claims (team text not null, item_id text not null, name text not null, at timestamptz not null default now(), primary key (team, item_id, name))`,
   `create table if not exists budgets (team text primary key, rows jsonb not null, updated_at timestamptz not null default now())`,
-  `create table if not exists people (email text primary key, name text not null, team text, focus text, first_seen timestamptz not null default now(), last_seen timestamptz not null default now())`,
+  `create table if not exists people (email text primary key, name text not null, team text, focus text, first_seen timestamptz not null default now(), last_seen timestamptz default now())`,
+  `alter table people alter column last_seen drop not null`,
+  `alter table people add column if not exists listed boolean not null default false`,
   `create table if not exists assignments (email text not null, quest_id text not null, week int not null, by_name text not null, note text, at timestamptz not null default now(), primary key (email, quest_id))`,
   `create table if not exists quest_work (email text not null, quest_id text not null, status text not null check (status in ('doing', 'stuck', 'done')), proof text, stuck text, coach_note text, checked_by text, checked_at timestamptz, at timestamptz not null default now(), primary key (email, quest_id))`,
   `create table if not exists custom_quests (id text primary key, data jsonb not null, by_name text, archived boolean not null default false, at timestamptz not null default now())`,
@@ -62,16 +64,49 @@ export function pgStore(url: string): Store {
     },
 
     async touchPerson({ email, name, team, focus }) {
-      await q(
-        `insert into people (email, name, team, focus) values ($1, $2, $3, $4)
+      const rows = await q(
+        `insert into people (email, name, team, focus, last_seen) values ($1, $2, $3, $4, now())
          on conflict (email) do update set name = excluded.name, last_seen = now(),
-           team = coalesce(excluded.team, people.team), focus = coalesce(excluded.focus, people.focus)`,
+           team = coalesce(excluded.team, people.team), focus = coalesce(excluded.focus, people.focus)
+         returning (xmax = 0) as created`,
         [email, name, team ?? null, focus ?? null],
       );
+      return rows[0]?.created === true;
     },
     async students() {
-      const rows = await q(`select email, name, team, focus, last_seen from people order by name`);
-      return rows.map(r => ({ email: String(r.email), name: String(r.name), team: (r.team as TeamId) ?? null, focus: (r.focus as Focus) ?? null, seen: iso(r.last_seen) }));
+      const rows = await q(`select email, name, team, focus, last_seen, listed from people order by name`);
+      return rows.map(r => ({
+        email: String(r.email),
+        name: String(r.name),
+        team: (r.team as TeamId) ?? null,
+        focus: (r.focus as Focus) ?? null,
+        seen: r.last_seen ? iso(r.last_seen) : null,
+        listed: !!r.listed,
+      }));
+    },
+    async addStudents(rows) {
+      if (!rows.length) return [];
+      const made = await q(
+        `insert into people (email, name, team, last_seen, listed)
+         select e, n, t, null, true from unnest($1::text[], $2::text[], $3::text[]) as x(e, n, t)
+         on conflict (email) do update set listed = true,
+           team = coalesce(people.team, excluded.team),
+           name = case when people.last_seen is null then excluded.name else people.name end
+         returning email, (xmax = 0) as created`,
+        [rows.map(r => r.email), rows.map(r => r.name), rows.map(r => r.team)],
+      );
+      return made.filter(r => r.created === true).map(r => String(r.email));
+    },
+    async updateStudents(emails, patch) {
+      if (!emails.length) return;
+      if (patch.team !== undefined) await q(`update people set team = $2 where email = any($1::text[])`, [emails, patch.team]);
+      if (patch.listed !== undefined) await q(`update people set listed = $2 where email = any($1::text[])`, [emails, patch.listed]);
+    },
+    async removeStudents(emails) {
+      if (!emails.length) return;
+      await q(`delete from assignments where email in (select email from people where email = any($1::text[]) and last_seen is null)`, [emails]);
+      await q(`delete from people where email = any($1::text[]) and last_seen is null`, [emails]);
+      await q(`update people set listed = false where email = any($1::text[])`, [emails]);
     },
 
     async assignments(email) {
@@ -141,10 +176,10 @@ export function pgStore(url: string): Store {
     },
 
     async settings(): Promise<Settings> {
-      const rows = await q(`select key, value from settings where key in ('flags', 'admins')`);
+      const rows = await q(`select key, value from settings where key in ('flags', 'admins', 'starter')`);
       const get = (k: string) => rows.find(r => r.key === k)?.value;
-      const admins = get("admins");
-      return { flags: readFlags(get("flags")), admins: Array.isArray(admins) ? admins.map(String) : [] };
+      const list = (v: unknown) => (Array.isArray(v) ? v.map(String) : []);
+      return { flags: readFlags(get("flags")), admins: list(get("admins")), starter: list(get("starter")) };
     },
     async saveSettings(patch) {
       for (const [k, v] of Object.entries(patch)) {
