@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { QuestDetail } from "@/components/QuestDetail";
 import { CustomQuest } from "@/components/CustomQuest";
 import { QUESTS, QUEST_BY_ID } from "@/lib/data/quests";
@@ -18,5 +19,9 @@ export default async function QuestPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const q = QUEST_BY_ID[id];
   if (!q) return <CustomQuest id={id} />;
-  return <QuestDetail q={q} />;
+  return (
+    <Suspense>
+      <QuestDetail q={q} />
+    </Suspense>
+  );
 }

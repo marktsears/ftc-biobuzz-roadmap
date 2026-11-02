@@ -606,6 +606,32 @@ select:focus {
 }
 
 /* ---------- header ---------- */
+.preview-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 22px;
+  background: var(--gold-3);
+  color: var(--ink);
+}
+.preview-bar p {
+  margin: 0;
+}
+.preview-bar a {
+  font-family: var(--font-u);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--navy);
+  white-space: nowrap;
+}
+.racts {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
 .site-head {
   background: var(--navy);
   color: var(--white);

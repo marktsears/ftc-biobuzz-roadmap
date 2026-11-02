@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "./AppProvider";
 import { CoachView } from "./CoachView";
 import { KIND_ICON } from "./QuestCard";
+import { PreviewBar, questHref, usePreviewStudent } from "./preview";
 import { LadderCard, StatusPill, doneSet, statusOf } from "./QuestStatus";
 import { Task } from "./Task";
 import { Tracker } from "./Tracker";
@@ -15,7 +16,7 @@ import { KIND_LABEL, questXp, type Quest } from "@/lib/data/quests";
 import { PACE_COPY, daysTo, pace } from "@/lib/progress";
 import { myTasks, openTasks } from "@/lib/pick";
 import { fmt, pd, plural } from "@/lib/time";
-import type { Assignment, Focus, Work } from "@/lib/types";
+import type { Assignment, Focus, TeamId, Work } from "@/lib/types";
 import { MILESTONES, phaseOf, qualifier, wEnd, wStart } from "@/lib/weeks";
 import { diffDays } from "@/lib/time";
 
@@ -215,9 +216,8 @@ function SignInGate({ week }: { week: number }) {
   );
 }
 
-function StudentHero({ count, stuck }: { count: number; stuck: number }) {
-  const { person, team } = useApp();
-  const first = person.split(" ")[0];
+function StudentHero({ count, stuck, name, team }: { count: number; stuck: number; name: string; team: string | null }) {
+  const first = name.split(" ")[0];
   const line =
     stuck > 0
       ? "Your coach can see where you’re stuck. Try a hint, or start another quest while you wait."
@@ -228,7 +228,7 @@ function StudentHero({ count, stuck }: { count: number; stuck: number }) {
     <section className="page-hero home-hero">
       <Shapes variant="banner" />
       <div className="wrap">
-        <div className="eyebrow light">BIOBUZZ · Team {team}</div>
+        <div className="eyebrow light">{team ? `BIOBUZZ · Team ${team}` : "BIOBUZZ"}</div>
         <h1>Hi {first}</h1>
         <p>{line}</p>
       </div>
@@ -242,12 +242,12 @@ interface Row {
   w?: Work;
 }
 
-function AssignedRow({ a, q, w }: Row) {
+function AssignedRow({ a, q, w, asEmail }: Row & { asEmail?: string }) {
   const { flags } = useApp();
   const s = statusOf(w);
   return (
     <li>
-      <Link href={`/quests/${q.id}`} className={`arow s-${s}`} style={{ ["--tc" as string]: `var(--t-${q.track})` } as React.CSSProperties}>
+      <Link href={questHref(q.id, asEmail)} className={`arow s-${s}`} style={{ ["--tc" as string]: `var(--t-${q.track})` } as React.CSSProperties}>
         <span className="qc-ico">
           <Icon name={s === "checked" || s === "done" ? "check" : KIND_ICON[q.kind]} size={20} />
         </span>
@@ -266,7 +266,7 @@ function AssignedRow({ a, q, w }: Row) {
   );
 }
 
-function MyQuests({ thisWeek, open, doneCount }: { thisWeek: Row[]; open: Row[]; doneCount: number }) {
+function MyQuests({ thisWeek, open, doneCount, asEmail }: { thisWeek: Row[]; open: Row[]; doneCount: number; asEmail?: string }) {
   return (
     <section className="card my-quests" aria-labelledby="mq-h">
       <div className="strip-head">
@@ -282,7 +282,7 @@ function MyQuests({ thisWeek, open, doneCount }: { thisWeek: Row[]; open: Row[];
               <div className="label">This week</div>
               <ul className="arows">
                 {thisWeek.map(r => (
-                  <AssignedRow key={r.q.id} {...r} />
+                  <AssignedRow key={r.q.id} {...r} asEmail={asEmail} />
                 ))}
               </ul>
             </>
@@ -292,7 +292,7 @@ function MyQuests({ thisWeek, open, doneCount }: { thisWeek: Row[]; open: Row[];
               <div className="label">Still open from earlier</div>
               <ul className="arows">
                 {open.map(r => (
-                  <AssignedRow key={r.q.id} {...r} />
+                  <AssignedRow key={r.q.id} {...r} asEmail={asEmail} />
                 ))}
               </ul>
             </>
@@ -310,26 +310,42 @@ function laddersToShow(focus: Focus, done: Set<string>): Ladder[] {
   return LADDERS.filter(l => l.id === "onshape" || l.id === "code");
 }
 
-export function HomeView() {
-  const { clock, person, flags, mine, questById, focus, admin } = useApp();
+/** A student's Home. Coaches reuse it, read-only, to see one student's screen. */
+export function StudentHome({
+  name,
+  team,
+  focus,
+  assignments,
+  work,
+  asEmail,
+}: {
+  name: string;
+  team: TeamId | null;
+  focus: Focus | null;
+  assignments: Assignment[];
+  work: Record<string, Work>;
+  /** set when a coach is looking, so quest links stay on this student's screen */
+  asEmail?: string;
+}) {
+  const { clock, flags, questById } = useApp();
   const shown = clock.before ? 1 : clock.now;
+  const theirFocus = focus && focus !== "all" ? focus : "all";
   const rows = useMemo(
     () =>
-      mine.assignments
+      assignments
         .filter(a => a.week <= shown)
         .flatMap((a): Row[] => {
           const q = questById(a.quest);
-          return q ? [{ a, q, w: mine.work[a.quest] }] : [];
+          return q ? [{ a, q, w: work[a.quest] }] : [];
         }),
-    [mine, questById, shown],
+    [assignments, questById, shown, work],
   );
-  if (admin) return <CoachView />;
-  if (!person) return <SignInGate week={shown} />;
-
+  const done = useMemo(() => doneSet(work), [work]);
   const thisWeek = rows.filter(r => r.a.week === shown);
   const open = rows.filter(r => r.a.week < shown && r.w?.status !== "done");
   const stuck = rows.filter(r => r.w?.status === "stuck").length;
-  const doneCount = Object.values(mine.work).filter(w => w.status === "done").length;
+  const doneCount = Object.values(work).filter(w => w.status === "done").length;
+  const questsHref = asEmail ? `/quests?as=${encodeURIComponent(asEmail)}` : "/quests";
 
   return (
     <>
@@ -341,16 +357,16 @@ export function HomeView() {
           </div>
         </>
       ) : (
-        <StudentHero count={thisWeek.length} stuck={stuck} />
+        <StudentHero count={thisWeek.length} stuck={stuck} name={name} team={team} />
       )}
 
       <div className={`wrap stack-lg ${flags.season ? "" : "pull"}`}>
         {flags.season && <PaceLine />}
-        <MyQuests thisWeek={thisWeek} open={open} doneCount={doneCount} />
+        <MyQuests thisWeek={thisWeek} open={open} doneCount={doneCount} asEmail={asEmail} />
 
         {rows.some(r => r.w?.status !== "done") ? (
           <p className="muted">
-            Want something else? <Link href="/quests">See all the quests and ladders</Link>
+            Want something else? <Link href={questsHref}>See all the quests and ladders</Link>
           </p>
         ) : (
           <section aria-labelledby="own-h">
@@ -361,13 +377,13 @@ export function HomeView() {
                 </h2>
                 <p className="muted">Each ladder starts from zero. Do the next step.</p>
               </div>
-              <Link className="btn sm" href="/quests">
+              <Link className="btn sm" href={questsHref}>
                 All quests →
               </Link>
             </div>
             <div className="ladders">
-              {laddersToShow(focus, doneSet(mine.work)).map(l => (
-                <LadderCard key={l.id} l={l} />
+              {laddersToShow(theirFocus, done).map(l => (
+                <LadderCard key={l.id} l={l} done={done} as={asEmail} />
               ))}
             </div>
           </section>
@@ -377,4 +393,36 @@ export function HomeView() {
       </div>
     </>
   );
+}
+
+export function HomeView() {
+  const { clock, person, mine, focus, admin, team } = useApp();
+  const preview = usePreviewStudent();
+  const shown = clock.before ? 1 : clock.now;
+  if (admin && preview.email) {
+    return (
+      <>
+        <PreviewBar name={preview.student?.name} />
+        {preview.loading && <p className="wrap muted">Loading their screen…</p>}
+        {preview.missing && (
+          <p className="wrap">
+            That student isn’t on your class list. <Link href="/">Back to class</Link>
+          </p>
+        )}
+        {preview.student && (
+          <StudentHome
+            name={preview.student.name}
+            team={preview.student.team}
+            focus={preview.student.focus}
+            assignments={preview.assignments}
+            work={preview.work}
+            asEmail={preview.student.email}
+          />
+        )}
+      </>
+    );
+  }
+  if (admin) return <CoachView />;
+  if (!person) return <SignInGate week={shown} />;
+  return <StudentHome name={person} team={team} focus={focus} assignments={mine.assignments} work={mine.work} />;
 }

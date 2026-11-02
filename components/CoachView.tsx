@@ -15,7 +15,7 @@ import { LADDERS, LADDER_OF } from "@/lib/data/ladders";
 import { KIND_LABEL, LEVEL_LABEL, type Quest, type QuestKind } from "@/lib/data/quests";
 import { FLAG_INFO } from "@/lib/flags";
 import { ago, plural } from "@/lib/time";
-import { TEAM_IDS, type CoachState, type FlagKey, type Student, type TeamId, type Work } from "@/lib/types";
+import { type CoachState, type FlagKey, type Student, type Work } from "@/lib/types";
 
 type Tab = "class" | "bank" | "labs";
 type Post = (body: Record<string, unknown>) => Promise<boolean>;
@@ -123,9 +123,9 @@ export function CoachView() {
 
 function ClassTab({ data, post }: { data: CoachState; post: Post }) {
   const { clock, questById, toast, weeks } = useApp();
+  const router = useRouter();
   const lastWeek = Math.max(1, weeks.length);
   const [week, setWeek] = useState(Math.min(lastWeek, Math.max(1, clock.before ? 1 : clock.now)));
-  const [team, setTeam] = useState<TeamId | "all" | "none">("all");
   const [who, setWho] = useState<"all" | "attention" | "empty" | "waiting">("all");
   const [find, setFind] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -141,12 +141,11 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
     setPicked(new Set());
     setConfirmRemove(false);
     setCarryAsk(false);
-  }, [team, find, who]);
+  }, [find, who]);
 
   const listed = data.students.filter(s => s.listed);
   const unlisted = data.students.filter(s => !s.listed);
   const waiting = listed.filter(s => !s.seen);
-  const teamChips: (TeamId | "all" | "none")[] = ["all", ...TEAM_IDS, ...(listed.some(s => !s.team) ? ["none" as const] : [])];
 
   const byEmail = useMemo(() => {
     const m: Record<string, { work: Record<string, Work>; assigned: CoachState["assignments"] }> = {};
@@ -156,9 +155,7 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
     return m;
   }, [data]);
 
-  const onTeam = (s: Student) => team === "all" || (team === "none" ? !s.team : s.team === team);
   const students = listed.filter(s => {
-    if (!onTeam(s)) return false;
     if (find.trim() && !`${s.name} ${s.email}`.toLowerCase().includes(find.trim().toLowerCase())) return false;
     const info = byEmail[s.email];
     if (who === "attention") return Object.values(info.work).some(needsAttention);
@@ -185,10 +182,8 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
   };
   const nameOf = (email: string) => data.students.find(s => s.email === email)?.name ?? email;
 
-  const teamOf = (email: string) => data.students.find(s => s.email === email)?.team ?? null;
   const needs = data.work
     .filter(needsAttention)
-    .filter(w => team === "all" || (team === "none" ? !teamOf(w.email) : teamOf(w.email) === team))
     .sort((a, b) => (a.status === "stuck" ? 0 : 1) - (b.status === "stuck" ? 0 : 1) || b.at.localeCompare(a.at));
   const stuckNeeds = needs.filter(w => w.status === "stuck");
   const readyNeeds = needs.filter(w => w.status !== "stuck");
@@ -325,13 +320,6 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
                 </button>
               </div>
               <div className="chips">
-                {teamChips.map(t => (
-                  <button key={t} type="button" className={`chip ${team === t ? "on" : ""}`} aria-pressed={team === t} onClick={() => setTeam(t)}>
-                    {t === "all" ? "Both teams" : t === "none" ? "No team yet" : `Team ${t}`}
-                  </button>
-                ))}
-              </div>
-              <div className="chips">
                 {(
                   [
                     ["all", "Everyone"],
@@ -350,19 +338,6 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
                 <input type="checkbox" checked={allShown} onChange={() => setPicked(allShown ? new Set() : new Set(students.map(s => s.email)))} />
                 {allShown ? "Clear" : `Select all ${students.length}`}
               </label>
-              {(team === "2827" || team === "3587") && (
-                <button
-                  type="button"
-                  className="btn sm"
-                  onClick={() => {
-                    const emails = listed.filter(s => s.team === team).map(s => s.email);
-                    setPicked(new Set(emails));
-                    setAssignTo(emails);
-                  }}
-                >
-                  Assign to Team {team}
-                </button>
-              )}
               {week < lastWeek && (
                 <button type="button" className="link-btn" onClick={() => setCarryAsk(true)}>
                   Move unfinished to Week {week + 1}
@@ -382,10 +357,11 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
                     open={open === s.email}
                     onOpen={() => setOpen(o => (o === s.email ? null : s.email))}
                     onAssign={() => setAssignTo([s.email])}
+                    onSee={() => router.push(`/?as=${encodeURIComponent(s.email)}`)}
                     post={post}
                   />
                 ))}
-                {students.length === 0 && <p className="empty">Nobody matches. Try Both teams, or clear the search.</p>}
+                {students.length === 0 && <p className="empty">Nobody matches. Clear the search.</p>}
               </ul>
           </>
         )}
@@ -471,13 +447,6 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
               <button type="button" className="link-btn light" onClick={() => setPicked(new Set())}>
                 Clear
               </button>
-              <div className="bulk-move" role="group" aria-label="Move to team">
-                {TEAM_IDS.map(t => (
-                  <button key={t} type="button" className="link-btn light" onClick={() => bulk({ op: "moveStudents", team: t }, `Moved to Team ${t}`)}>
-                    Move to {t}
-                  </button>
-                ))}
-              </div>
               <button type="button" className="link-btn light" onClick={() => setConfirmRemove(true)}>
                 Remove
               </button>
@@ -497,7 +466,7 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
         </div>
       )}
 
-      {adding && <AddStudents data={data} post={post} team={team === "all" || team === "none" ? null : team} onClose={() => setAdding(false)} />}
+      {adding && <AddStudents data={data} post={post} team={null} onClose={() => setAdding(false)} />}
       {inviting && <InviteDialog onClose={() => setInviting(false)} />}
 
       {assignTo && (
@@ -598,14 +567,9 @@ function NeedRow({ w, name, q, post }: { w: Work & { email: string }; name: stri
         ) : (
           <div className="need-actions">
             {stuck ? (
-              <>
-                <button type="button" className="btn" onClick={() => setReply("open")}>
-                  Reply
-                </button>
-                <button type="button" className="link-btn" onClick={() => post({ op: "review", email: w.email, quest: w.quest, ok: false, note: "I’ll come help." })}>
-                  I’ll come help
-                </button>
-              </>
+              <button type="button" className="btn" onClick={() => setReply("open")}>
+                Reply
+              </button>
             ) : (
               <>
                 <button type="button" className="btn ok-btn" onClick={() => post({ op: "review", email: w.email, quest: w.quest, ok: true })}>
@@ -632,6 +596,7 @@ function RosterRow({
   open,
   onOpen,
   onAssign,
+  onSee,
   post,
 }: {
   s: Student;
@@ -642,6 +607,7 @@ function RosterRow({
   open: boolean;
   onOpen: () => void;
   onAssign: () => void;
+  onSee: () => void;
   post: Post;
 }) {
   const { questById } = useApp();
@@ -681,9 +647,14 @@ function RosterRow({
             </>
           )}
         </div>
-        <button type="button" className="btn sm" onClick={onAssign}>
-          <Icon name="plus" size={14} /> Assign
-        </button>
+        <div className="racts">
+          <button type="button" className="link-btn" onClick={onSee}>
+            See their Home
+          </button>
+          <button type="button" className="btn sm" onClick={onAssign}>
+            <Icon name="plus" size={14} /> Assign
+          </button>
+        </div>
       </div>
 
       {open && (

@@ -6,6 +6,7 @@ import { useApp } from "./AppProvider";
 import { KIND_ICON, QuestCard } from "./QuestCard";
 import { StatusPill, doneSet, statusOf } from "./QuestStatus";
 import { RichText } from "./RichText";
+import { PreviewBar, questHref, usePreviewEmail, usePreviewStudent } from "./preview";
 import { Avatar, Icon, Shapes } from "./ui";
 import { QUIZ_CHECKER } from "@/lib/coach";
 import { KIND_LABEL, LEVEL_LABEL, questXp, type Quest, type Step } from "@/lib/data/quests";
@@ -22,11 +23,20 @@ const hostOf = (url: string) => {
 import { LADDER_OF } from "@/lib/data/ladders";
 import { TRACKS } from "@/lib/data/core";
 import { ago } from "@/lib/time";
+import type { Assignment, Work } from "@/lib/types";
 import { questCrew, rankQuests } from "@/lib/pick";
 
 export function QuestDetail({ q }: { q: Quest }) {
   const { state, mine, focus, clock, flags, allQuests, questById, email, person, setWork, admin } = useApp();
-  const done = useMemo(() => doneSet(mine.work), [mine.work]);
+  const previewEmail = usePreviewEmail();
+  const preview = usePreviewStudent();
+  const viewing = !!preview.student;
+  const asCoach = admin && !previewEmail;
+  const quietSteps = asCoach || viewing;
+  const viewWork = viewing ? preview.work : mine.work;
+  const viewAssignments = viewing ? preview.assignments : mine.assignments;
+  const viewFocus = viewing ? (preview.student?.focus && preview.student.focus !== "all" ? preview.student.focus : "all") : focus;
+  const done = useMemo(() => doneSet(viewWork), [viewWork]);
   const crew = questCrew(state, q.id);
   const stepKey = `tr-steps:${email}:${q.id}`;
   const [steps, setSteps] = useState<boolean[]>(() => q.steps.map(() => false));
@@ -38,28 +48,38 @@ export function QuestDetail({ q }: { q: Quest }) {
     } catch {}
   }, [stepKey, q.steps.length]);
   const rung = LADDER_OF[q.id];
-  const assigned = mine.assignments.find(a => a.quest === q.id);
+  const assigned = viewAssignments.find(a => a.quest === q.id);
 
   const next = useMemo(() => {
     if (rung) {
-      const after = admin ? rung.ladder.steps[rung.idx + 1] : rung.ladder.steps.slice(rung.idx + 1).find(id => !done.has(id));
+      const after = asCoach ? rung.ladder.steps[rung.idx + 1] : rung.ladder.steps.slice(rung.idx + 1).find(id => !done.has(id));
       const nq = after && questById(after);
       if (nq) return [nq];
-      if (admin) return [];
+      if (asCoach) return [];
     }
-    if (admin) return [];
-    return rankQuests({ quests: allQuests.filter(x => x.id !== q.id), done, focus, week: clock.now, seed: "next" + q.id, maxMins: 45 }).slice(0, 2);
-  }, [rung, done, questById, allQuests, q.id, focus, clock.now, admin]);
+    if (asCoach) return [];
+    return rankQuests({ quests: allQuests.filter(x => x.id !== q.id), done, focus: viewFocus, week: clock.now, seed: "next" + q.id, maxMins: 45 }).slice(0, 2);
+  }, [rung, done, questById, allQuests, q.id, viewFocus, clock.now, asCoach]);
   const stepsDone = steps.filter(Boolean).length;
   const prereqs = (q.before ?? []).map(id => questById(id)).filter((x): x is Quest => !!x);
 
+  if (previewEmail && !preview.student) {
+    return (
+      <>
+        <PreviewBar />
+        <p className="wrap">{preview.missing ? "That student isn’t on your class list." : "Loading their screen…"}</p>
+      </>
+    );
+  }
+
   return (
     <>
+      {viewing && preview.student && <PreviewBar name={preview.student.name} />}
       <section className="page-hero quest-hero" style={{ ["--tc" as string]: `var(--t-${q.track})` } as React.CSSProperties}>
         <Shapes variant="banner" />
         <div className="wrap">
-          <Link href="/quests" className="back-link">
-            <Icon name="left" size={16} /> Quests
+          <Link href={viewing && preview.email ? `/?as=${encodeURIComponent(preview.email)}` : "/quests"} className="back-link">
+            <Icon name="left" size={16} /> {viewing ? "Their Home" : "Quests"}
           </Link>
           <div className="qd-kind">
             <span className="qc-ico lg">
@@ -89,7 +109,7 @@ export function QuestDetail({ q }: { q: Quest }) {
 
       <div className="wrap qd-grid pull">
         <div className="qd-main">
-          {assigned && !admin && (
+          {assigned && !asCoach && (
             <section className="card assigned-note">
               <Icon name="flag" size={18} />
               <p>
@@ -111,7 +131,7 @@ export function QuestDetail({ q }: { q: Quest }) {
             <section className="card getready">
               {prereqs.length > 0 && (
                 <div className="gr-block">
-                  <div className="label">{admin ? "They should do these first" : "Do these first"}</div>
+                  <div className="label">{asCoach ? "They should do these first" : "Do these first"}</div>
                   <ul className="prereq">
                     {prereqs.map(p => (
                       <li key={p.id}>
@@ -126,7 +146,7 @@ export function QuestDetail({ q }: { q: Quest }) {
               )}
               {q.needs && q.needs.length > 0 && (
                 <div className="gr-block">
-                  <div className="label">{admin ? "They’ll need" : "You’ll need"}</div>
+                  <div className="label">{asCoach ? "They’ll need" : "You’ll need"}</div>
                   <ul className="plain gr-needs">
                     {q.needs.map(n => (
                       <li key={n}>
@@ -150,14 +170,14 @@ export function QuestDetail({ q }: { q: Quest }) {
           {!q.quiz && (
             <section className="card">
               <div className="strip-head">
-                <h2>{admin ? "What they do" : "Do this"}</h2>
-                {!admin && (
+                <h2>{asCoach ? "What they do" : "Do this"}</h2>
+                {!quietSteps && (
                   <span className="mono">
                     {stepsDone}/{q.steps.length}
                   </span>
                 )}
               </div>
-              {admin ? (
+              {quietSteps ? (
                 <ol className="steps preview">
                   {q.steps.map((s, i) => {
                     const ok = stepOk(s);
@@ -212,7 +232,7 @@ export function QuestDetail({ q }: { q: Quest }) {
                   })}
                 </ol>
               )}
-              {!admin && <p className="muted small">These boxes stay on this computer. They are just for you while you work.</p>}
+              {!quietSteps && <p className="muted small">These boxes stay on this computer. They are just for you while you work.</p>}
             </section>
           )}
 
@@ -242,7 +262,7 @@ export function QuestDetail({ q }: { q: Quest }) {
 
           {q.stretch && (
             <section className="card stretch">
-              <div className="label">{admin ? "If they finish early" : "Finished early? Want more?"}</div>
+              <div className="label">{asCoach ? "If they finish early" : "Finished early? Want more?"}</div>
               <p>
                 <RichText text={q.stretch} />
               </p>
@@ -251,7 +271,7 @@ export function QuestDetail({ q }: { q: Quest }) {
 
           {q.hints && q.hints.length > 0 && (
             <details className="card hints">
-              <summary>{admin ? "Hints they can open" : "Open a hint"}</summary>
+              <summary>{asCoach ? "Hints they can open" : "Open a hint"}</summary>
               <ul className="plain">
                 {q.hints.map(h => (
                   <li key={h}>
@@ -264,10 +284,21 @@ export function QuestDetail({ q }: { q: Quest }) {
         </div>
 
         <aside className="qd-side">
-          {admin ? (
+          {asCoach ? (
             <>
               <section className="card claim">
                 <CoachGlance q={q} />
+              </section>
+              {q.quiz && (
+                <section className="card claim">
+                  <Quiz q={q} preview />
+                </section>
+              )}
+            </>
+          ) : viewing ? (
+            <>
+              <section className="card claim">
+                <PreviewStatus q={q} w={viewWork[q.id]} assigned={assigned} />
               </section>
               {q.quiz && (
                 <section className="card claim">
@@ -279,7 +310,7 @@ export function QuestDetail({ q }: { q: Quest }) {
             <section className="card claim">{q.quiz ? <Quiz q={q} /> : <WorkPanel q={q} />}</section>
           )}
 
-          {!admin && crew.length > 0 && (
+          {!asCoach && !viewing && crew.length > 0 && (
             <section className="card crew">
               <div className="label">Who’s done this</div>
               <ul>
@@ -306,13 +337,44 @@ export function QuestDetail({ q }: { q: Quest }) {
             </div>
             <div className="qgrid two">
               {next.map(x => (
-                <QuestCard key={x.id} q={x} done={admin ? false : done.has(x.id)} />
+                <QuestCard key={x.id} q={x} done={asCoach ? false : done.has(x.id)} as={viewing ? preview.email : undefined} />
               ))}
             </div>
           </section>
         </div>
       )}
     </>
+  );
+}
+
+/** Read-only: where this student is on the quest. */
+function PreviewStatus({ q, w, assigned }: { q: Quest; w?: Work; assigned?: Assignment }) {
+  const s = statusOf(w);
+  return (
+    <div className="work">
+      <div className="strip-head">
+        <div className="label">Their progress</div>
+        <StatusPill w={w} />
+      </div>
+      {assigned && (
+        <p className="show-it">
+          Assigned for Week {assigned.week}
+          {assigned.note ? `. “${assigned.note}”` : ""}
+        </p>
+      )}
+      {s === "stuck" && w?.stuck && <p className="muted small">They said: “{w.stuck}”</p>}
+      {w?.coach && (
+        <p className="coach-note">
+          <b>Coach:</b> “{w.coach}”
+        </p>
+      )}
+      {(s === "done" || s === "checked") && w?.proof && <p className="show-it">“{w.proof}”</p>}
+      {s === "none" && <p className="muted small">They haven’t started this.</p>}
+      {s === "doing" && <p className="muted small">They’ve started it.</p>}
+      <p className="show-it">
+        <b>To finish:</b> <RichText text={q.proof} />
+      </p>
+    </div>
   );
 }
 

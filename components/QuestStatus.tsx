@@ -53,8 +53,9 @@ export function laddersFor(focus: Focus): Ladder[] {
 }
 
 /** One ladder: how far you've climbed and the next rung. Coaches get the full order, with no personal progress. */
-export function LadderCard({ l, coach }: { l: Ladder; coach?: boolean }) {
+export function LadderCard({ l, coach, done: doneIn, as }: { l: Ladder; coach?: boolean; done?: Set<string>; as?: string | null }) {
   const { mine, questById } = useApp();
+  const href = (id: string) => (as ? `/quests/${id}?as=${encodeURIComponent(as)}` : `/quests/${id}`);
   if (coach) {
     return (
       <section className="skill-ladder" style={{ ["--tc" as string]: `var(--t-${l.track})` } as React.CSSProperties}>
@@ -70,7 +71,7 @@ export function LadderCard({ l, coach }: { l: Ladder; coach?: boolean }) {
             const q = questById(id);
             return (
               <li key={id}>
-                <Link href={`/quests/${id}`}>
+                <Link href={href(id)}>
                   <span className="n">{i + 1}</span>
                   <span>{q?.title ?? id}</span>
                   {q && <small>{q.mins} min</small>}
@@ -82,7 +83,7 @@ export function LadderCard({ l, coach }: { l: Ladder; coach?: boolean }) {
       </section>
     );
   }
-  const done = doneSet(mine.work);
+  const done = doneIn ?? doneSet(mine.work);
   const next = nextRung(l, done);
   const nq = next ? questById(next) : undefined;
   const n = l.steps.filter(id => done.has(id)).length;
@@ -103,7 +104,7 @@ export function LadderCard({ l, coach }: { l: Ladder; coach?: boolean }) {
         ))}
       </ol>
       {nq ? (
-        <Link className="ld-next" href={`/quests/${nq.id}`}>
+        <Link className="ld-next" href={href(nq.id)}>
           <span className="qc-ico">
             <Icon name={KIND_ICON[nq.kind]} size={18} />
           </span>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useApp } from "./AppProvider";
 import { KIND_ICON, QuestCard } from "./QuestCard";
+import { PreviewBar, usePreviewEmail, usePreviewStudent } from "./preview";
 import { LadderCard, doneSet, laddersFor } from "./QuestStatus";
 import { Task } from "./Task";
 import { Icon, Shapes } from "./ui";
@@ -24,9 +25,14 @@ const KINDS = Object.keys(KIND_LABEL) as QuestKind[];
 
 export function QuestBoard() {
   const { state, person, focus, clock, weeks, mine, allQuests, flags, admin } = useApp();
-  const done = useMemo(() => doneSet(mine.work), [mine.work]);
+  const previewEmail = usePreviewEmail();
+  const preview = usePreviewStudent();
+  const asCoach = admin && !previewEmail;
+  const boardWork = preview.student ? preview.work : mine.work;
+  const boardFocus = preview.student?.focus && preview.student.focus !== "all" ? preview.student.focus : previewEmail ? "all" : focus;
+  const done = useMemo(() => doneSet(boardWork), [boardWork]);
   const day = iso(clock.today);
-  const trackBase: Focus = admin ? "all" : focus;
+  const trackBase: Focus = asCoach ? "all" : boardFocus;
 
   const [maxMins, setMaxMins] = useState<number | undefined>(undefined);
   const [kind, setKind] = useState<QuestKind | "all">("all");
@@ -35,37 +41,47 @@ export function QuestBoard() {
   const [hideDone, setHideDone] = useState(false);
   const [query, setQuery] = useState("");
   const [more, setMore] = useState(false);
-  const extraOn = (level !== "all" ? 1 : 0) + (track !== trackBase ? 1 : 0) + (!admin && hideDone ? 1 : 0);
+  const extraOn = (level !== "all" ? 1 : 0) + (track !== trackBase ? 1 : 0) + (!asCoach && hideDone ? 1 : 0);
 
   const ranked = useMemo(() => rankQuests({ quests: allQuests, done, focus: track, week: clock.now, seed: day, includeDone: true, stable: true }), [allQuests, done, track, clock.now, day]);
   const qtext = query.trim().toLowerCase();
   const shown = ranked.filter(q => (!maxMins || q.mins <= maxMins) && (kind === "all" || q.kind === kind) && (level === "all" || q.level === level) && (track === "all" || q.track === track) && (!hideDone || !done.has(q.id)) && (!qtext || `${q.title} ${q.blurb}`.toLowerCase().includes(qtext)));
   const suggestions = useMemo(() => {
     const out: Quest[] = [];
-    for (const l of laddersFor(focus)) {
+    for (const l of laddersFor(boardFocus)) {
       const id = nextRung(l, done);
       const q = id ? allQuests.find(x => x.id === id) : undefined;
       if (q) out.push(q);
       if (out.length === 3) break;
     }
     return out;
-  }, [focus, done, allQuests]);
+  }, [boardFocus, done, allQuests]);
   const mineDone = allQuests.filter(q => done.has(q.id)).length;
   const tasks = useMemo(() => (flags.teamTasks ? openTasks(weeks, state, focus, clock).slice(0, 5) : []), [flags.teamTasks, weeks, state, focus, clock]);
 
+  if (previewEmail && !preview.student) {
+    return (
+      <>
+        <PreviewBar />
+        <p className="wrap">{preview.missing ? "That student isn’t on your class list." : "Loading their screen…"}</p>
+      </>
+    );
+  }
+
   return (
     <>
+      {preview.student && <PreviewBar name={preview.student.name} />}
       <section className="page-hero quest-hero">
         <Shapes variant="banner" />
         <div className="wrap">
           <div className="eyebrow light">Quests</div>
-          <h1>{admin ? "Every quest" : "Not sure what to do?"}</h1>
+          <h1>{asCoach ? "Every quest" : "Not sure what to do?"}</h1>
           <p>
-            {admin
+            {asCoach
               ? "Open one to read the steps, the time, and what a student has to show you. Assigning still happens from your class."
               : "Every quest is small enough to finish today. Pick a ladder and do the next step, or find one below."}
           </p>
-          {person && !admin && (
+          {(preview.student || (person && !asCoach)) && (
             <div className="quest-progress">
               <b>{mineDone}</b> of {allQuests.length} done
             </div>
@@ -76,22 +92,22 @@ export function QuestBoard() {
       <div className="wrap stack-lg pull">
         <details className="card ladders-card">
           <summary id="ladders-h">Ladders</summary>
-          <p className="muted small">{admin ? "Students climb these in order. Open a step to read it before you assign it." : "Each one starts from zero and ends with real robot work."}</p>
+          <p className="muted small">{asCoach ? "Students climb these in order. Open a step to read it before you assign it." : "Each one starts from zero and ends with real robot work."}</p>
           <div className="ladders">
-            {laddersFor(admin ? "all" : focus).map(l => (
-              <LadderCard key={l.id} l={l} coach={admin} />
+            {laddersFor(asCoach ? "all" : boardFocus).map(l => (
+              <LadderCard key={l.id} l={l} coach={asCoach} done={preview.student ? done : undefined} as={previewEmail} />
             ))}
           </div>
         </details>
 
-        {!admin && suggestions.length > 0 && (
+        {!asCoach && suggestions.length > 0 && (
           <section aria-labelledby="next-h">
             <h2 id="next-h" className="h-section">
               Next for you
             </h2>
             <div className="qgrid">
               {suggestions.map(q => (
-                <QuestCard key={q.id} q={q} done={done.has(q.id)} />
+                <QuestCard key={q.id} q={q} done={done.has(q.id)} as={previewEmail} />
               ))}
             </div>
           </section>
@@ -113,7 +129,7 @@ export function QuestBoard() {
             </div>
           </div>
           <div className="f-row">
-            <span className="label">{admin ? "Kind" : "What sounds good?"}</span>
+            <span className="label">{asCoach ? "Kind" : "What sounds good?"}</span>
             <div className="chips">
               <button type="button" className={`chip ${kind === "all" ? "on" : ""}`} aria-pressed={kind === "all"} onClick={() => setKind("all")}>
                 Anything
@@ -131,7 +147,7 @@ export function QuestBoard() {
           {more && (
             <>
               <div className="f-row">
-                <span className="label">{admin ? "Track" : "For"}</span>
+                <span className="label">{asCoach ? "Track" : "For"}</span>
                 <div className="chips">
                   {(["all", "B", "S", "D", "O"] as Focus[]).map(t => (
                     <button key={t} type="button" className={`chip ${track === t ? "on" : ""}`} aria-pressed={track === t} onClick={() => setTrack(t)}>
@@ -149,7 +165,7 @@ export function QuestBoard() {
                     </button>
                   ))}
                 </div>
-                {!admin && (
+                {!asCoach && (
                   <label className="toggle">
                     <input type="checkbox" checked={hideDone} onChange={e => setHideDone(e.target.checked)} /> Hide the ones I’ve done
                   </label>
@@ -168,7 +184,7 @@ export function QuestBoard() {
           {shown.length ? (
             <div className="qgrid">
               {shown.map(q => (
-                <QuestCard key={q.id} q={q} done={admin ? false : done.has(q.id)} crew={admin ? 0 : questCrew(state, q.id).length} />
+                <QuestCard key={q.id} q={q} done={asCoach ? false : done.has(q.id)} crew={asCoach ? 0 : questCrew(state, q.id).length} as={previewEmail} />
               ))}
             </div>
           ) : (
@@ -176,7 +192,7 @@ export function QuestBoard() {
           )}
         </section>
 
-        {!admin && flags.teamTasks && (
+        {!asCoach && flags.teamTasks && (
           <section className="card" aria-labelledby="grab-h">
             <div className="strip-head">
               <div>

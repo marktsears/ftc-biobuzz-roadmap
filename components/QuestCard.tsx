@@ -15,12 +15,12 @@ import type { Focus } from "@/lib/types";
 
 export { KIND_ICON };
 
-export function QuestCard({ q, done, crew = 0 }: { q: Quest; done?: boolean; crew?: number }) {
+export function QuestCard({ q, done, crew = 0, as }: { q: Quest; done?: boolean; crew?: number; as?: string | null }) {
   const { flags, mine } = useApp();
-  const w = mine.work[q.id];
+  const w = as ? undefined : mine.work[q.id];
   const s = statusOf(w);
   return (
-    <Link href={`/quests/${q.id}`} className={`qcard ${done ? "done" : ""}`} style={{ ["--tc" as string]: `var(--t-${q.track})` } as React.CSSProperties}>
+    <Link href={as ? `/quests/${q.id}?as=${encodeURIComponent(as)}` : `/quests/${q.id}`} className={`qcard ${done ? "done" : ""}`} style={{ ["--tc" as string]: `var(--t-${q.track})` } as React.CSSProperties}>
       <div className="qc-top">
         <span className="qc-ico">
           <Icon name={done ? "check" : KIND_ICON[q.kind]} size={20} />
