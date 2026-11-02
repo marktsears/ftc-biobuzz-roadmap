@@ -145,3 +145,74 @@ export type WriteOp =
   | { op: "claim"; id: string; on: boolean }
   | { op: "quest"; quest: string; on: boolean; note?: string }
   | { op: "budget"; rows: BudgetRow[] };
+
+/* ---------- quests the coach assigns ---------- */
+
+/** Parts of the site an admin can switch on and off from Labs. */
+export type FlagKey = "week" | "season" | "robot" | "playbook" | "hive" | "xp" | "teamTasks";
+export type Flags = Record<FlagKey, boolean>;
+
+export type WorkStatus = "doing" | "stuck" | "done";
+
+/** One student's progress on one quest. */
+export interface Work {
+  quest: string;
+  status: WorkStatus;
+  /** what they made: a link or a sentence */
+  proof?: string;
+  /** what they're stuck on */
+  stuck?: string;
+  /** the coach's latest reply */
+  coach?: string;
+  checkedBy?: string;
+  checkedAt?: string;
+  at: string;
+}
+
+export interface Assignment {
+  quest: string;
+  /** the calendar week it was assigned for */
+  week: number;
+  by: string;
+  at: string;
+  note?: string;
+}
+
+export interface Student {
+  email: string;
+  name: string;
+  team: TeamId | null;
+  focus: Focus | null;
+  seen: string;
+}
+
+export interface Settings {
+  flags: Flags;
+  /** admins added from Labs, on top of the ones in code */
+  admins: string[];
+}
+
+/** What /api/me returns. */
+export interface MeState {
+  db: boolean;
+  admin: boolean;
+  flags: Flags;
+  assignments: Assignment[];
+  work: Record<string, Work>;
+  custom: import("./data/quests").Quest[];
+  /** the team and focus saved for whoever is signed in */
+  profile: Pick<Student, "email" | "team" | "focus"> | null;
+}
+
+/** What /api/coach returns. */
+export interface CoachState {
+  db: boolean;
+  students: Student[];
+  assignments: (Assignment & { email: string })[];
+  work: (Work & { email: string })[];
+  custom: import("./data/quests").Quest[];
+  archived: import("./data/quests").Quest[];
+  settings: Settings;
+  /** admins that are set in code and can't be removed from Labs */
+  fixedAdmins: string[];
+}

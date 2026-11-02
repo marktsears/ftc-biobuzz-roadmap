@@ -3,7 +3,7 @@ import { getStore } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
-/** Hit once a day by Vercel Cron (see vercel.json) so a free Supabase project never goes idle and pauses. */
+/** Hit once a day by Vercel Cron (see vercel.json). Shows whether the database is reachable. */
 export async function GET() {
   const store = getStore();
   if (!store) return NextResponse.json({ ok: true, storage: "none" });

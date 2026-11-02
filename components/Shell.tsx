@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useApp } from "./AppProvider";
 import { Avatar, Icon, type IconName } from "./ui";
 import { TRACKS } from "@/lib/data/core";
+import { anyTeamTools } from "@/lib/flags";
 import { signIn, signOut } from "next-auth/react";
 import { fmtLong } from "@/lib/time";
 import { TEAM_IDS, type Focus, type TeamId } from "@/lib/types";
@@ -15,20 +16,23 @@ interface NavItem {
   label: string;
   icon: IconName;
   match: (p: string) => boolean;
+  show: boolean;
 }
 
 function useNav(): NavItem[] {
-  const { clock } = useApp();
+  const { clock, flags, admin } = useApp();
   const wk = clock.before ? 1 : clock.now;
-  return [
-    { href: "/", label: "Home", icon: "home", match: p => p === "/" },
-    { href: `/week/${wk}`, label: "Week", icon: "week", match: p => p.startsWith("/week") },
-    { href: "/quests", label: "Quests", icon: "quest", match: p => p.startsWith("/quests") },
-    { href: "/season", label: "Season", icon: "map", match: p => p.startsWith("/season") },
-    { href: "/robot", label: "Robot", icon: "robot", match: p => p.startsWith("/robot") },
-    { href: "/playbook", label: "Playbook", icon: "book", match: p => p.startsWith("/playbook") },
-    { href: "/hive", label: "Hive", icon: "hive", match: p => p.startsWith("/hive") },
+  const all: NavItem[] = [
+    { href: "/", label: "Home", icon: "home", match: p => p === "/", show: true },
+    { href: "/quests", label: "Quests", icon: "quest", match: p => p.startsWith("/quests"), show: true },
+    { href: `/week/${wk}`, label: "Week", icon: "week", match: p => p.startsWith("/week"), show: flags.week },
+    { href: "/season", label: "Season", icon: "map", match: p => p.startsWith("/season"), show: flags.season },
+    { href: "/robot", label: "Robot", icon: "robot", match: p => p.startsWith("/robot"), show: flags.robot },
+    { href: "/playbook", label: "Playbook", icon: "book", match: p => p.startsWith("/playbook"), show: flags.playbook },
+    { href: "/hive", label: "Hive", icon: "hive", match: p => p.startsWith("/hive"), show: flags.hive },
+    { href: "/coach", label: "Coach", icon: "users", match: p => p.startsWith("/coach"), show: admin },
   ];
+  return all.filter(n => n.show);
 }
 
 export function BrandMark({ size = 40 }: { size?: number }) {
@@ -44,7 +48,7 @@ export function BrandMark({ size = 40 }: { size?: number }) {
 export function Header() {
   const path = usePathname();
   const nav = useNav();
-  const { team, setTeam, person, openProfile } = useApp();
+  const { team, setTeam, person, openProfile, flags } = useApp();
   const gate = !person && path === "/";
   return (
     <header className="site-head">
@@ -68,7 +72,7 @@ export function Header() {
         )}
 
         <div className="head-tools">
-          {person && (
+          {person && anyTeamTools(flags) && (
             <div className="seg" role="group" aria-label="Choose your team">
               {TEAM_IDS.map(t => (
                 <button key={t} type="button" aria-pressed={team === t} onClick={() => setTeam(t as TeamId)}>
@@ -104,8 +108,9 @@ export function BottomNav() {
   const [more, setMore] = useState(false);
   useEffect(() => setMore(false), [path]);
   if (!person && path === "/") return null;
-  const main = nav.filter(n => ["Home", "Week", "Quests", "Hive"].includes(n.label));
-  const rest = nav.filter(n => !main.includes(n));
+  const fits = nav.length <= 5;
+  const main = fits ? nav : nav.slice(0, 4);
+  const rest = fits ? [] : nav.slice(4);
   return (
     <>
       {more && (
@@ -127,10 +132,12 @@ export function BottomNav() {
             <span>{n.label}</span>
           </Link>
         ))}
-        <button type="button" className={rest.some(n => n.match(path)) || more ? "on" : ""} onClick={() => setMore(m => !m)} aria-expanded={more}>
-          <Icon name="more" size={22} />
-          <span>More</span>
-        </button>
+        {rest.length > 0 && (
+          <button type="button" className={rest.some(n => n.match(path)) || more ? "on" : ""} onClick={() => setMore(m => !m)} aria-expanded={more}>
+            <Icon name="more" size={22} />
+            <span>More</span>
+          </button>
+        )}
       </nav>
     </>
   );
@@ -143,7 +150,7 @@ export function SignInBar() {
   return (
     <div className="signin-bar">
       <div className="wrap">
-        <p>Sign in with your Trinity Google account to tick tasks and do quests.</p>
+        <p>Sign in with your Trinity Google account to start quests.</p>
         <button type="button" onClick={openProfile}>
           Sign in
         </button>

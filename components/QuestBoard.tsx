@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useApp } from "./AppProvider";
 import { KIND_ICON, QuestCard } from "./QuestCard";
+import { LadderCard, doneSet, laddersFor } from "./QuestStatus";
 import { Task } from "./Task";
-import { Cta, Icon, Shapes } from "./ui";
-import { KIND_LABEL, LEVEL_LABEL, QUESTS, questXp, type QuestKind, type QuestLevel } from "@/lib/data/quests";
+import { Icon, Shapes } from "./ui";
+import { KIND_LABEL, LEVEL_LABEL, type QuestKind, type QuestLevel } from "@/lib/data/quests";
 import { TRACKS } from "@/lib/data/core";
 import { iso } from "@/lib/time";
-import { openTasks, questCrew, questsDoneBy, rankQuests } from "@/lib/pick";
+import { openTasks, questCrew, rankQuests } from "@/lib/pick";
 import type { Focus } from "@/lib/types";
 
 const TIMES: { label: string; max: number | undefined }[] = [
@@ -21,8 +22,8 @@ const TIMES: { label: string; max: number | undefined }[] = [
 const KINDS = Object.keys(KIND_LABEL) as QuestKind[];
 
 export function QuestBoard() {
-  const { state, person, focus, clock, weeks } = useApp();
-  const done = useMemo(() => questsDoneBy(state, person), [state, person]);
+  const { state, person, focus, clock, weeks, mine, allQuests, flags } = useApp();
+  const done = useMemo(() => doneSet(mine.work), [mine.work]);
   const day = iso(clock.today);
 
   const [maxMins, setMaxMins] = useState<number | undefined>(undefined);
@@ -30,62 +31,40 @@ export function QuestBoard() {
   const [level, setLevel] = useState<QuestLevel | "all">("all");
   const [track, setTrack] = useState<Focus>(focus);
   const [hideDone, setHideDone] = useState(false);
-  const [shuffle, setShuffle] = useState(0);
 
-  const ranked = useMemo(() => rankQuests({ quests: QUESTS, done, focus: track, week: clock.now, seed: day, includeDone: true }), [done, track, clock.now, day]);
-  const daily = useMemo(() => {
-    const pool = rankQuests({ quests: QUESTS, done, focus, week: clock.now, seed: day, maxMins: 45 });
-    return pool.length ? pool[shuffle % pool.length] : null;
-  }, [done, focus, clock.now, day, shuffle]);
-
+  const ranked = useMemo(() => rankQuests({ quests: allQuests, done, focus: track, week: clock.now, seed: day, includeDone: true }), [allQuests, done, track, clock.now, day]);
   const shown = ranked.filter(q => (!maxMins || q.mins <= maxMins) && (kind === "all" || q.kind === kind) && (level === "all" || q.level === level) && (track === "all" || q.track === track) && (!hideDone || !done.has(q.id)));
-  const mineDone = QUESTS.filter(q => done.has(q.id)).length;
-  const tasks = useMemo(() => openTasks(weeks, state, focus, clock).slice(0, 5), [weeks, state, focus, clock]);
+  const mineDone = allQuests.filter(q => done.has(q.id)).length;
+  const tasks = useMemo(() => (flags.teamTasks ? openTasks(weeks, state, focus, clock).slice(0, 5) : []), [flags.teamTasks, weeks, state, focus, clock]);
 
   return (
     <>
       <section className="page-hero quest-hero">
         <Shapes variant="banner" />
         <div className="wrap">
-          <div className="eyebrow light">Quest board</div>
-          <h1>Not sure what to do? Bored?</h1>
-          <p>Pick a quest. Watch something good, design a part, write a little code, take a quiz, or get your hands on the robot. Each one is small, finishable today, and gets you XP. Lots of them help your team right now.</p>
-          <div className="quest-progress">
-            <b>{mineDone}</b> of {QUESTS.length} quests done{person ? ` by ${person}` : ""}
-          </div>
+          <div className="eyebrow light">Quests</div>
+          <h1>Not sure what to do?</h1>
+          <p>Every quest is small enough to finish today. Pick a ladder and do the next step, or find one below.</p>
+          {person && (
+            <div className="quest-progress">
+              <b>{mineDone}</b> of {allQuests.length} done
+            </div>
+          )}
         </div>
       </section>
 
       <div className="wrap stack-lg pull">
-        {daily && (
-          <section className="qotd" aria-labelledby="qotd-h">
-            <div className="qotd-arch" aria-hidden="true">
-              <Icon name={KIND_ICON[daily.kind]} size={64} />
-            </div>
-            <div className="qotd-body">
-              <div className="eyebrow">Quest of the day</div>
-              <h2 id="qotd-h">{daily.title}</h2>
-              <p>{daily.blurb}</p>
-              <div className="qc-meta">
-                <span>
-                  <Icon name="clock" size={14} /> {daily.mins} min
-                </span>
-                <span>{KIND_LABEL[daily.kind]}</span>
-                <span>{LEVEL_LABEL[daily.level]}</span>
-                <span className="qc-xp">+{questXp(daily)} XP</span>
-                {daily.helpsTeam && <span className="qc-help">Helps the team</span>}
-              </div>
-              <div className="qotd-cta">
-                <Cta href={`/quests/${daily.id}`} variant="solid">
-                  Start this quest
-                </Cta>
-                <button type="button" className="ghost-btn dark" onClick={() => setShuffle(s => s + 1)}>
-                  <Icon name="shuffle" size={16} /> Show me another
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
+        <section aria-labelledby="ladders-h" className="card ladders-card">
+          <div className="strip-head">
+            <h2 id="ladders-h">Ladders</h2>
+            <span className="muted small">Each one starts from zero and ends with real robot work.</span>
+          </div>
+          <div className="ladders">
+            {laddersFor(focus).map(l => (
+              <LadderCard key={l.id} l={l} />
+            ))}
+          </div>
+        </section>
 
         <section className="filters card" aria-label="Find a quest">
           <div className="f-row">
@@ -153,26 +132,30 @@ export function QuestBoard() {
           )}
         </section>
 
-        <section className="card" aria-labelledby="grab-h">
-          <div className="strip-head">
-            <div>
-              <div className="eyebrow">Or help the team right now</div>
-              <h2 id="grab-h">Open tasks nobody has grabbed</h2>
+        {flags.teamTasks && (
+          <section className="card" aria-labelledby="grab-h">
+            <div className="strip-head">
+              <div>
+                <div className="eyebrow">Or help the team right now</div>
+                <h2 id="grab-h">Open tasks nobody has grabbed</h2>
+              </div>
+              {flags.week && (
+                <Link className="btn sm" href={`/week/${clock.before ? 1 : clock.now}`}>
+                  See the week →
+                </Link>
+              )}
             </div>
-            <Link className="btn sm" href={`/week/${clock.before ? 1 : clock.now}`}>
-              See the week →
-            </Link>
-          </div>
-          {tasks.length ? (
-            <div className="tasks">
-              {tasks.map(({ w, it }) => (
-                <Task key={it.id} it={it} showTrack weekLabel={`Week ${w.n}`} />
-              ))}
-            </div>
-          ) : (
-            <p className="empty">Everything is grabbed or done. Nice. Pick a quest.</p>
-          )}
-        </section>
+            {tasks.length ? (
+              <div className="tasks">
+                {tasks.map(({ w, it }) => (
+                  <Task key={it.id} it={it} showTrack weekLabel={`Week ${w.n}`} />
+                ))}
+              </div>
+            ) : (
+              <p className="empty">Everything is grabbed or done. Nice. Pick a quest.</p>
+            )}
+          </section>
+        )}
       </div>
     </>
   );

@@ -2,43 +2,152 @@ import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { applyOp } from "../apply";
-import { EMPTY_STATE, type RemoteState, type TeamId } from "../types";
+import { readFlags } from "../flags";
+import type { Quest } from "../data/quests";
+import { EMPTY_STATE, type Assignment, type BudgetRow, type CheckRec, type Settings, type Student, type TeamId, type Work } from "../types";
 import type { Store, StoredState } from "./types";
 
-/** Development-only store: one JSON file per team in .data/. Never used in production. */
-export function fileStore(): Store {
-  const dir = path.join(process.cwd(), ".data");
-  const file = (team: TeamId) => path.join(dir, `${team}.json`);
-  let queue: Promise<unknown> = Promise.resolve();
+interface TeamFile {
+  checks: Record<string, CheckRec>;
+  claims: Record<string, string[]>;
+  budget: BudgetRow[] | null;
+}
+interface DbFile {
+  teams: Partial<Record<TeamId, TeamFile>>;
+  people: Record<string, Student>;
+  assignments: (Assignment & { email: string })[];
+  work: (Work & { email: string })[];
+  custom: { quest: Quest; archived: boolean }[];
+  settings: Partial<Settings>;
+}
+const EMPTY_DB: DbFile = { teams: {}, people: {}, assignments: [], work: [], custom: [], settings: {} };
+const EMPTY_TEAM: TeamFile = { checks: {}, claims: {}, budget: null };
 
-  const read = async (team: TeamId): Promise<StoredState> => {
+/** Development-only store: one JSON file in .data/. Never used in production. */
+export function fileStore(): Store {
+  const file = path.join(process.cwd(), ".data", "db.json");
+  let queue: Promise<unknown> = Promise.resolve();
+  const now = () => new Date().toISOString();
+
+  const load = async (): Promise<DbFile> => {
     try {
-      const raw = JSON.parse(await fs.readFile(file(team), "utf8")) as Partial<StoredState>;
-      return { checks: raw.checks || {}, claims: raw.claims || {}, quests: raw.quests || [], budget: raw.budget ?? null };
+      return { ...EMPTY_DB, ...(JSON.parse(await fs.readFile(file, "utf8")) as Partial<DbFile>) };
     } catch {
-      return { checks: {}, claims: {}, quests: [], budget: null };
+      return structuredClone(EMPTY_DB);
     }
   };
   /** serialize read-modify-write so quick taps don't clobber each other */
-  const mutate = (team: TeamId, f: (s: RemoteState) => RemoteState) => {
+  const mutate = (f: (d: DbFile) => void) => {
     const run = queue.then(async () => {
-      const cur = await read(team);
-      const next = f({ ...EMPTY_STATE, ...cur, mode: "file" });
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(file(team), JSON.stringify({ checks: next.checks, claims: next.claims, quests: next.quests, budget: next.budget }, null, 1));
+      const d = await load();
+      f(d);
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, JSON.stringify(d, null, 1));
     });
     queue = run.catch(() => undefined);
     return run;
   };
-  const now = () => new Date().toISOString();
+  const teamOp = (team: TeamId, op: Parameters<typeof applyOp>[1], name: string) =>
+    mutate(d => {
+      const t = d.teams[team] ?? EMPTY_TEAM;
+      const next = applyOp({ ...EMPTY_STATE, ...t, mode: "file" }, op, name, now());
+      d.teams[team] = { checks: next.checks, claims: next.claims, budget: next.budget };
+    });
 
   return {
     mode: "file",
-    read,
-    setCheck: (team, id, name, on) => mutate(team, s => applyOp(s, { op: "check", id, on }, name, now())),
-    setClaim: (team, id, name, on) => mutate(team, s => applyOp(s, { op: "claim", id, on }, name, now())),
-    setQuest: (team, quest, name, on, note) => mutate(team, s => applyOp(s, { op: "quest", quest, on, note }, name, now())),
-    setBudget: (team, rows) => mutate(team, s => applyOp(s, { op: "budget", rows }, "", now())),
+
+    async read(team): Promise<StoredState> {
+      const d = await load();
+      const t = d.teams[team] ?? EMPTY_TEAM;
+      const quests = d.work
+        .filter(w => w.status === "done" && d.people[w.email]?.team === team)
+        .map(w => ({ id: w.quest, by: d.people[w.email].name, at: w.at, note: w.proof }));
+      return { checks: t.checks, claims: t.claims, budget: t.budget, quests };
+    },
+    setCheck: (team, id, name, on) => teamOp(team, { op: "check", id, on }, name),
+    setClaim: (team, id, name, on) => teamOp(team, { op: "claim", id, on }, name),
+    setBudget: (team, rows) => teamOp(team, { op: "budget", rows }, ""),
+
+    touchPerson: ({ email, name, team, focus }) =>
+      mutate(d => {
+        const was = d.people[email];
+        d.people[email] = { email, name, team: team ?? was?.team ?? null, focus: focus ?? was?.focus ?? null, seen: now() };
+      }),
+    async students() {
+      return Object.values((await load()).people).sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    async assignments(email) {
+      const all = (await load()).assignments;
+      return email ? all.filter(a => a.email === email) : all;
+    },
+    assign: rows =>
+      mutate(d => {
+        for (const r of rows) {
+          d.assignments = d.assignments.filter(a => !(a.email === r.email && a.quest === r.quest));
+          d.assignments.push({ email: r.email, quest: r.quest, week: r.week, by: r.by, note: r.note, at: now() });
+        }
+      }),
+    unassign: (email, quest) =>
+      mutate(d => {
+        d.assignments = d.assignments.filter(a => !(a.email === email && a.quest === quest));
+      }),
+
+    async work(email) {
+      const all = (await load()).work;
+      return email ? all.filter(w => w.email === email) : all;
+    },
+    setWork: (email, quest, patch) =>
+      mutate(d => {
+        const was = d.work.find(w => w.email === email && w.quest === quest);
+        d.work = d.work.filter(w => w !== was);
+        if (!patch) return;
+        d.work.push({
+          email,
+          quest,
+          status: patch.status,
+          proof: patch.proof ?? was?.proof,
+          stuck: patch.status === "stuck" ? patch.stuck : undefined,
+          coach: was?.coach,
+          at: now(),
+        });
+      }),
+    review: (email, quest, by, ok, note) =>
+      mutate(d => {
+        const w = d.work.find(x => x.email === email && x.quest === quest);
+        if (ok) {
+          if (w) Object.assign(w, { checkedBy: by, checkedAt: now(), coach: note });
+          return;
+        }
+        if (w) Object.assign(w, { status: "doing", stuck: undefined, coach: note, checkedBy: undefined, checkedAt: undefined });
+        else d.work.push({ email, quest, status: "doing", coach: note, at: now() });
+      }),
+
+    async customQuests() {
+      return (await load()).custom;
+    },
+    saveQuest: quest =>
+      mutate(d => {
+        const was = d.custom.find(c => c.quest.id === quest.id);
+        if (was) was.quest = quest;
+        else d.custom.push({ quest, archived: false });
+      }),
+    archiveQuest: (id, archived) =>
+      mutate(d => {
+        const c = d.custom.find(x => x.quest.id === id);
+        if (c) c.archived = archived;
+      }),
+
+    async settings() {
+      const s = (await load()).settings;
+      return { flags: readFlags(s.flags), admins: s.admins ?? [] };
+    },
+    saveSettings: patch =>
+      mutate(d => {
+        d.settings = { ...d.settings, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)) };
+      }),
+
     ping: async () => undefined,
   };
 }

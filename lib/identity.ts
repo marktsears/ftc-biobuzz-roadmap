@@ -26,6 +26,24 @@ export function isAllowedAccount(email?: string | null, hd?: string | null): boo
   return isTrinityAccount(email, hd);
 }
 
+/** Admins can assign quests and use Labs. AUTH_ADMIN_EMAILS adds more, and so can the Labs page. */
+const ADMIN_EMAILS = ["msears@gmail.com"];
+
+export const normEmail = (e?: string | null) => (e || "").trim().toLowerCase();
+
+export function fixedAdmins(): string[] {
+  const fromEnv = (process.env.AUTH_ADMIN_EMAILS || "")
+    .split(/[,;\s]+/)
+    .map(normEmail)
+    .filter(s => s.includes("@"));
+  return [...new Set([...ADMIN_EMAILS, ...fromEnv])];
+}
+
+export function isAdmin(email: string | null | undefined, extra: string[] = []): boolean {
+  const e = normEmail(email);
+  return !!e && (fixedAdmins().includes(e) || extra.map(normEmail).includes(e));
+}
+
 /** "Maya Sears" → "Maya S", short enough for the crew list. */
 export function displayNameFromGoogle(profile: { name?: string | null; given_name?: string; family_name?: string; email?: string | null }): string {
   const given = profile.given_name?.trim();

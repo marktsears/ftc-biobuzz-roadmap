@@ -4,25 +4,30 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useApp } from "./AppProvider";
 import { KIND_ICON, QuestCard } from "./QuestCard";
+import { StatusPill, doneSet, statusOf } from "./QuestStatus";
 import { Avatar, Icon, Shapes } from "./ui";
-import { KIND_LABEL, LEVEL_LABEL, QUESTS, questXp, type Quest } from "@/lib/data/quests";
+import { KIND_LABEL, LEVEL_LABEL, questXp, type Quest } from "@/lib/data/quests";
+import { LADDER_OF } from "@/lib/data/ladders";
 import { TRACKS } from "@/lib/data/core";
 import { ago } from "@/lib/time";
-import { questCrew, questsDoneBy, rankQuests } from "@/lib/pick";
-import { nameKey } from "@/lib/xp";
+import { questCrew, rankQuests } from "@/lib/pick";
 
 export function QuestDetail({ q }: { q: Quest }) {
-  const { state, person, quest, openProfile, focus, clock } = useApp();
-  const done = useMemo(() => questsDoneBy(state, person), [state, person]);
+  const { state, mine, focus, clock, flags, allQuests, questById } = useApp();
+  const done = useMemo(() => doneSet(mine.work), [mine.work]);
   const crew = questCrew(state, q.id);
-  const mine = crew.find(c => !!person && nameKey(c.by) === nameKey(person));
   const [steps, setSteps] = useState<boolean[]>(() => q.steps.map(() => false));
-  const [note, setNote] = useState("");
+  const rung = LADDER_OF[q.id];
+  const assigned = mine.assignments.find(a => a.quest === q.id);
 
-  const next = useMemo(
-    () => rankQuests({ quests: QUESTS.filter(x => x.id !== q.id), done, focus, week: clock.now, seed: "next" + q.id, maxMins: 45 }).slice(0, 2),
-    [q.id, done, focus, clock.now],
-  );
+  const next = useMemo(() => {
+    if (rung) {
+      const after = rung.ladder.steps.slice(rung.idx + 1).find(id => !done.has(id));
+      const nq = after && questById(after);
+      if (nq) return [nq];
+    }
+    return rankQuests({ quests: allQuests.filter(x => x.id !== q.id), done, focus, week: clock.now, seed: "next" + q.id, maxMins: 45 }).slice(0, 2);
+  }, [rung, done, questById, allQuests, q.id, focus, clock.now]);
   const stepsDone = steps.filter(Boolean).length;
 
   return (
@@ -31,7 +36,7 @@ export function QuestDetail({ q }: { q: Quest }) {
         <Shapes variant="banner" />
         <div className="wrap">
           <Link href="/quests" className="back-link">
-            <Icon name="left" size={16} /> Quest board
+            <Icon name="left" size={16} /> Quests
           </Link>
           <div className="qd-kind">
             <span className="qc-ico lg">
@@ -48,18 +53,34 @@ export function QuestDetail({ q }: { q: Quest }) {
               <Icon name="clock" size={15} /> {q.mins} min
             </span>
             <span>{LEVEL_LABEL[q.level]}</span>
-            <span className="xp">+{questXp(q)} XP</span>
+            {flags.xp && <span className="xp">+{questXp(q)} XP</span>}
             {q.helpsTeam && <span className="help">Helps the team</span>}
+            {rung && (
+              <span>
+                {rung.ladder.name} · step {rung.idx + 1} of {rung.ladder.steps.length}
+              </span>
+            )}
           </div>
         </div>
       </section>
 
       <div className="wrap qd-grid pull">
         <div className="qd-main">
-          <section className="card">
-            <div className="label">Why it matters</div>
-            <p className="why-line">{q.why}</p>
-          </section>
+          {assigned && (
+            <section className="card assigned-note">
+              <Icon name="flag" size={18} />
+              <p>
+                <b>{assigned.by} picked this for you</b> for Week {assigned.week}.{assigned.note ? ` “${assigned.note}”` : ""}
+              </p>
+            </section>
+          )}
+
+          {q.why && (
+            <section className="card">
+              <div className="label">Why it matters</div>
+              <p className="why-line">{q.why}</p>
+            </section>
+          )}
 
           {!q.quiz && (
             <section className="card">
@@ -82,107 +103,63 @@ export function QuestDetail({ q }: { q: Quest }) {
                   </li>
                 ))}
               </ol>
-              <p className="muted small">These boxes are just for you while you work. The button on the right is what counts.</p>
+              <p className="muted small">These boxes are just for you while you work.</p>
             </section>
           )}
 
-          <section className="card">
-            <h2>Learn from</h2>
-            <ul className="res">
-              {q.resources.map(r => (
-                <li key={r.url}>
-                  <a href={r.url} target="_blank" rel="noopener noreferrer">
-                    <span className="res-ico">
-                      <Icon name={r.url.includes("youtube.com") ? "play" : "link"} size={18} />
-                    </span>
-                    <span>
-                      <b>{r.label}</b>
-                      {r.note && <small>{r.note}</small>}
-                    </span>
-                    <Icon name="arrow" size={16} />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {q.resources.length > 0 && (
+            <section className="card">
+              <h2>Learn from</h2>
+              <ul className="res">
+                {q.resources.map(r => (
+                  <li key={r.url}>
+                    <a href={r.url} target="_blank" rel="noopener noreferrer">
+                      <span className="res-ico">
+                        <Icon name={r.url.includes("youtube.com") ? "play" : "link"} size={18} />
+                      </span>
+                      <span>
+                        <b>{r.label}</b>
+                        {r.note && <small>{r.note}</small>}
+                      </span>
+                      <Icon name="arrow" size={16} />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {q.hints && q.hints.length > 0 && (
             <details className="card hints">
-              <summary>Stuck? Open a hint</summary>
+              <summary>Open a hint</summary>
               <ul className="plain">
                 {q.hints.map(h => (
                   <li key={h}>{h}</li>
                 ))}
               </ul>
-              <p className="muted small">Still stuck? Ask a teammate who’s done this quest (see the list on the right) or the coach.</p>
             </details>
           )}
         </div>
 
         <aside className="qd-side">
-          <section className="card claim">
-            {q.quiz ? (
-              <Quiz q={q} />
-            ) : (
-              <>
-                <div className="label">Show it</div>
-                <p>{q.proof}</p>
-                {mine ? (
-                  <div className="doneblock">
-                    <Icon name="check" size={20} />
-                    <div>
-                      <b>You finished this {ago(mine.at)}.</b>
-                      {mine.note && <small>“{mine.note}”</small>}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <label className="field">
-                      <span>One line about what you made or learned (optional)</span>
-                      <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={280} rows={3} placeholder="I learned that…" />
-                    </label>
-                    <button
-                      type="button"
-                      className="cta solid block"
-                      onClick={() => {
-                        if (!person) return openProfile();
-                        quest(q.id, true, note.trim() || undefined);
-                      }}
-                    >
-                      <span>I did it · +{questXp(q)} XP</span>
-                      <i className="cta-dot" aria-hidden="true">
-                        <Icon name="check" size={16} />
-                      </i>
-                    </button>
-                  </>
-                )}
-                {mine && (
-                  <button type="button" className="link-btn" onClick={() => quest(q.id, false)}>
-                    Undo
-                  </button>
-                )}
-              </>
-            )}
-          </section>
+          <section className="card claim">{q.quiz ? <Quiz q={q} /> : <WorkPanel q={q} />}</section>
 
-          <section className="card crew">
-            <div className="label">Who’s done this</div>
-            {crew.length === 0 ? (
-              <p className="empty">Nobody yet. Be the first.</p>
-            ) : (
+          {crew.length > 0 && (
+            <section className="card crew">
+              <div className="label">Who’s done this</div>
               <ul>
                 {crew.map(c => (
                   <li key={c.by}>
                     <Avatar name={c.by} size={28} />
                     <span>
                       <b>{c.by}</b> <small>{ago(c.at)}</small>
-                      {c.note && <em>“{c.note}”</em>}
                     </span>
                   </li>
                 ))}
               </ul>
-            )}
-          </section>
+              <p className="muted small">Stuck? Ask one of them.</p>
+            </section>
+          )}
         </aside>
       </div>
 
@@ -190,11 +167,11 @@ export function QuestDetail({ q }: { q: Quest }) {
         <div className="wrap stack-lg">
           <section>
             <div className="strip-head">
-              <h2 className="h-section">What next?</h2>
+              <h2 className="h-section">{rung && next.length === 1 ? `Next in ${rung.ladder.name}` : "What next?"}</h2>
             </div>
             <div className="qgrid two">
               {next.map(x => (
-                <QuestCard key={x.id} q={x} done={done.has(x.id)} crew={questCrew(state, x.id).length} />
+                <QuestCard key={x.id} q={x} done={done.has(x.id)} />
               ))}
             </div>
           </section>
@@ -204,8 +181,134 @@ export function QuestDetail({ q }: { q: Quest }) {
   );
 }
 
+/** Start it, say you're stuck, or finish it and show what you made. */
+function WorkPanel({ q }: { q: Quest }) {
+  const { person, openProfile, mine, setWork } = useApp();
+  const w = mine.work[q.id];
+  const s = statusOf(w);
+  const [mode, setMode] = useState<"stuck" | "done" | null>(null);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const save = async (st: "doing" | "stuck" | "done" | null, t?: string) => {
+    if (!person) return openProfile();
+    setBusy(true);
+    const ok = await setWork(q.id, st, t);
+    setBusy(false);
+    if (ok) {
+      setMode(null);
+      setText("");
+    }
+  };
+
+  return (
+    <div className="work">
+      <div className="strip-head">
+        <div className="label">Your progress</div>
+        <StatusPill w={w} />
+      </div>
+
+      {w?.coach && (
+        <p className="coach-note">
+          <b>Coach:</b> “{w.coach}”
+        </p>
+      )}
+      {s === "stuck" && w?.stuck && (
+        <p className="muted small">
+          You said: “{w.stuck}”. Your coach can see this.
+        </p>
+      )}
+      {(s === "done" || s === "checked") && (
+        <div className="doneblock">
+          <Icon name="check" size={20} />
+          <div>
+            <b>{s === "checked" ? `Checked by ${w!.checkedBy}` : "Done. Your coach will check it."}</b>
+            {w?.proof && <small>“{w.proof}”</small>}
+          </div>
+        </div>
+      )}
+
+      {mode === null && s !== "done" && s !== "checked" && (
+        <>
+          <p className="show-it">
+            <b>To finish:</b> {q.proof}
+          </p>
+          <div className="work-actions">
+            <button type="button" className="cta solid block" disabled={busy} onClick={() => setMode("done")}>
+              <span>I finished it</span>
+              <i className="cta-dot" aria-hidden="true">
+                <Icon name="check" size={16} />
+              </i>
+            </button>
+            {s === "none" && (
+              <button type="button" className="btn" disabled={busy} onClick={() => save("doing")}>
+                Start it
+              </button>
+            )}
+            <button type="button" className="btn stuck-btn" disabled={busy} onClick={() => setMode("stuck")}>
+              I’m stuck
+            </button>
+          </div>
+        </>
+      )}
+
+      {mode === "done" && (
+        <form
+          className="work-form"
+          onSubmit={e => {
+            e.preventDefault();
+            void save("done", text);
+          }}
+        >
+          <label className="field">
+            <span>Show what you made: paste a link (Onshape, GitHub, a photo) or write one sentence.</span>
+            <textarea value={text} onChange={e => setText(e.target.value)} maxLength={500} rows={3} placeholder="https://cad.onshape.com/… or: I learned that…" autoFocus />
+          </label>
+          <div className="work-actions row">
+            <button type="submit" className="cta solid" disabled={busy || !text.trim()}>
+              <span>Send to my coach</span>
+            </button>
+            <button type="button" className="link-btn" onClick={() => setMode(null)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {mode === "stuck" && (
+        <form
+          className="work-form"
+          onSubmit={e => {
+            e.preventDefault();
+            void save("stuck", text);
+          }}
+        >
+          <label className="field">
+            <span>What’s got you stuck? One sentence is enough.</span>
+            <textarea value={text} onChange={e => setText(e.target.value)} maxLength={500} rows={3} placeholder="I can’t find where to…" autoFocus />
+          </label>
+          <div className="work-actions row">
+            <button type="submit" className="cta solid" disabled={busy || !text.trim()}>
+              <span>Tell my coach</span>
+            </button>
+            <button type="button" className="link-btn" onClick={() => setMode(null)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {s !== "none" && mode === null && (
+        <button type="button" className="link-btn" disabled={busy} onClick={() => save(s === "doing" ? null : "doing")}>
+          {s === "stuck" ? "I’m not stuck anymore" : s === "doing" ? "Undo" : "Not finished after all"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function Quiz({ q }: { q: Quest }) {
-  const { quest, person, openProfile, state } = useApp();
+  const { person, openProfile, mine, setWork, flags } = useApp();
   const qs = q.quiz!;
   const [picks, setPicks] = useState<(number | null)[]>(() => qs.map(() => null));
   const [round, setRound] = useState(0);
@@ -214,7 +317,7 @@ function Quiz({ q }: { q: Quest }) {
   const need = Math.ceil(qs.length * 0.8);
   const finished = answered === qs.length;
   const passed = finished && score >= need;
-  const already = !!person && state.quests.some(c => c.id === q.id && nameKey(c.by) === nameKey(person));
+  const already = mine.work[q.id]?.status === "done";
 
   const choose = (i: number, a: number) => {
     if (picks[i] !== null) return;
@@ -224,7 +327,7 @@ function Quiz({ q }: { q: Quest }) {
     const sc = next.reduce<number>((n, p, k) => n + (p === qs[k].answer ? 1 : 0), 0);
     if (fin && sc >= need && !already) {
       if (!person) openProfile();
-      else quest(q.id, true, `Quiz ${sc}/${qs.length}`);
+      else void setWork(q.id, "done", `Quiz ${sc}/${qs.length}`);
     }
   };
 
@@ -260,7 +363,7 @@ function Quiz({ q }: { q: Quest }) {
       {finished && (
         <div className={`quiz-result ${passed ? "pass" : "retry"}`}>
           <b>{passed ? `You passed: ${score} of ${qs.length}` : `${score} of ${qs.length}. So close.`}</b>
-          <span>{passed ? (already ? "Already counted." : `+${questXp(q)} XP`) : "Read the explanations and try again."}</span>
+          <span>{passed ? (already ? "Already counted." : flags.xp ? `+${questXp(q)} XP` : "Your coach can see it.") : "Read the explanations and try again."}</span>
           {!passed && (
             <button
               type="button"

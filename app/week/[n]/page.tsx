@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { WeekView } from "@/components/WeekView";
 import { RAW_WEEKS } from "@/lib/data/weeks";
+import { Feature } from "@/components/Feature";
 
 export const dynamicParams = false;
 
@@ -20,8 +21,10 @@ export default async function WeekPage({ params }: { params: Promise<{ n: string
   const num = Number(n);
   if (!RAW_WEEKS.some(w => w.n === num)) notFound();
   return (
-    <Suspense fallback={null}>
-      <WeekView n={num} />
-    </Suspense>
+    <Feature flag="week">
+      <Suspense fallback={null}>
+        <WeekView n={num} />
+      </Suspense>
+    </Feature>
   );
 }

@@ -4,16 +4,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useApp } from "./AppProvider";
-import { Cta, Icon, Shapes, type IconName } from "./ui";
-import { KIND_LABEL, LEVEL_LABEL, QUESTS, questXp, type Quest, type QuestKind } from "@/lib/data/quests";
+import { KIND_ICON } from "./kindIcon";
+import { StatusPill, doneSet, statusOf } from "./QuestStatus";
+import { Cta, Icon, Shapes } from "./ui";
+import { KIND_LABEL, LEVEL_LABEL, questXp, type Quest } from "@/lib/data/quests";
 import { TRACKS } from "@/lib/data/core";
 import { iso } from "@/lib/time";
-import { questCrew, questsDoneBy, rankQuests } from "@/lib/pick";
+import { questCrew, rankQuests } from "@/lib/pick";
 import type { Focus } from "@/lib/types";
 
-export const KIND_ICON: Record<QuestKind, IconName> = { watch: "play", code: "code", design: "design", build: "build", plan: "plan", quiz: "quiz" };
+export { KIND_ICON };
 
 export function QuestCard({ q, done, crew = 0 }: { q: Quest; done?: boolean; crew?: number }) {
+  const { flags, mine } = useApp();
+  const w = mine.work[q.id];
+  const s = statusOf(w);
   return (
     <Link href={`/quests/${q.id}`} className={`qcard ${done ? "done" : ""}`} style={{ ["--tc" as string]: `var(--t-${q.track})` } as React.CSSProperties}>
       <div className="qc-top">
@@ -21,7 +26,7 @@ export function QuestCard({ q, done, crew = 0 }: { q: Quest; done?: boolean; cre
           <Icon name={done ? "check" : KIND_ICON[q.kind]} size={20} />
         </span>
         <span className="qc-kind">{KIND_LABEL[q.kind]}</span>
-        <span className="qc-xp">+{questXp(q)} XP</span>
+        {s !== "none" ? <StatusPill w={w} short /> : flags.xp ? <span className="qc-xp">+{questXp(q)} XP</span> : null}
       </div>
       <h3>{q.title}</h3>
       <p>{q.blurb}</p>
@@ -42,18 +47,18 @@ export function QuestCard({ q, done, crew = 0 }: { q: Quest; done?: boolean; cre
   );
 }
 
-/** The "Not sure what to do? Bored?" callout. Shown on Home and at the bottom of every week. */
+/** The "Not sure what to do? Bored?" callout, at the bottom of every week page. */
 export function BoredBanner({ focus: focusIn, compact }: { focus?: Focus; compact?: boolean }) {
-  const { focus: f, state, person, clock } = useApp();
+  const { focus: f, mine, clock, allQuests, flags } = useApp();
   const router = useRouter();
   const focus = focusIn ?? f;
   const day = iso(clock.today);
-  const done = useMemo(() => questsDoneBy(state, person), [state, person]);
-  const picks = useMemo(() => rankQuests({ quests: QUESTS, done, focus, week: clock.now, seed: day, maxMins: 45 }).slice(0, compact ? 2 : 3), [done, focus, clock.now, day, compact]);
+  const done = useMemo(() => doneSet(mine.work), [mine.work]);
+  const picks = useMemo(() => rankQuests({ quests: allQuests, done, focus, week: clock.now, seed: day, maxMins: 45 }).slice(0, compact ? 2 : 3), [allQuests, done, focus, clock.now, day, compact]);
 
   const surprise = () => {
-    const pool = rankQuests({ quests: QUESTS, done, focus: "all", week: clock.now, seed: String(Math.random()) });
-    router.push(`/quests/${(pool[0] ?? QUESTS[0]).id}`);
+    const pool = rankQuests({ quests: allQuests, done, focus: "all", week: clock.now, seed: String(Math.random()) });
+    router.push(`/quests/${(pool[0] ?? allQuests[0]).id}`);
   };
 
   return (
@@ -68,7 +73,7 @@ export function BoredBanner({ focus: focusIn, compact }: { focus?: Focus; compac
           </p>
           <div className="bored-cta">
             <Cta href="/quests" variant="solid">
-              Open the Quest Board
+              See the quests
             </Cta>
             <button type="button" className="ghost-btn" onClick={surprise}>
               <Icon name="shuffle" size={16} /> Surprise me
@@ -85,7 +90,7 @@ export function BoredBanner({ focus: focusIn, compact }: { focus?: Focus; compac
               <span>
                 <b>{q.title}</b>
                 <small>
-                  {KIND_LABEL[q.kind]} · {q.mins} min · +{questXp(q)} XP
+                  {KIND_LABEL[q.kind]} · {q.mins} min{flags.xp ? ` · +${questXp(q)} XP` : ""}
                 </small>
               </span>
               <Icon name="arrow" size={16} />

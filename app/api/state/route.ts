@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { QUEST_BY_ID } from "@/lib/data/quests";
-import { isAllowedAccount } from "@/lib/identity";
+import { isAllowedAccount, normEmail } from "@/lib/identity";
 import { getStore, teamCode } from "@/lib/store";
 import { TEAM_IDS, type BudgetRow, type RemoteState, type TeamId, type WriteOp } from "@/lib/types";
+import { questExists } from "@/lib/viewer";
 import { getIndex, isTaskKind } from "@/lib/weeks";
 import { NAME_MAX, normName } from "@/lib/xp";
 
@@ -83,9 +83,9 @@ export async function POST(req: Request) {
       }
       case "quest": {
         const q = String(body.quest ?? "");
-        if (!QUEST_BY_ID[q]) return json({ error: "Unknown quest" }, 400);
+        if (!(await questExists(store, q))) return json({ error: "Unknown quest" }, 400);
         const note = typeof body.note === "string" ? body.note.trim().slice(0, 280) : undefined;
-        await store.setQuest(team, q, name, body.on !== false, note);
+        await store.setWork(normEmail(email), q, body.on !== false ? { status: "done", proof: note } : null);
         break;
       }
       case "budget": {

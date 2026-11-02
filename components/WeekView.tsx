@@ -5,13 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useApp } from "./AppProvider";
 import { QuestCard } from "./QuestCard";
+import { doneSet } from "./QuestStatus";
 import { TrackRings } from "./Social";
 import { Task } from "./Task";
 import { Cta, Icon, Pill, Shapes } from "./ui";
 import { LINKS, TRACKS } from "@/lib/data/core";
-import { QUESTS } from "@/lib/data/quests";
 import { carryOver, daysTo, demoTally, gateOverdue, gateTally, isOn, taskTally, trackTally, weekLate } from "@/lib/progress";
-import { questCrew, questsDoneBy, rankQuests } from "@/lib/pick";
+import { questCrew, rankQuests } from "@/lib/pick";
 import { fmt, fmtLong, pd, plural } from "@/lib/time";
 import { phaseOf, wEnd, wStart } from "@/lib/weeks";
 import type { Item, TrackCode, Week } from "@/lib/types";
@@ -295,9 +295,9 @@ function TrackTab({ w, code, lanes }: { w: Week; code: TrackCode; lanes: [string
 }
 
 function QuestStrip({ code, week }: { code: TrackCode; week: number }) {
-  const { state, person } = useApp();
-  const done = useMemo(() => questsDoneBy(state, person), [state, person]);
-  const picks = useMemo(() => rankQuests({ quests: QUESTS.filter(q => q.track === code), done, focus: "all", week, seed: "w" + week, includeDone: false }).slice(0, 2), [code, done, week]);
+  const { state, mine, allQuests } = useApp();
+  const done = useMemo(() => doneSet(mine.work), [mine.work]);
+  const picks = useMemo(() => rankQuests({ quests: allQuests.filter(q => q.track === code), done, focus: "all", week, seed: "w" + week, includeDone: false }).slice(0, 2), [allQuests, code, done, week]);
   if (!picks.length) return null;
   return (
     <section aria-label="Quests for this track">

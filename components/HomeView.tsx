@@ -4,13 +4,16 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "./AppProvider";
-import { BoredBanner } from "./QuestCard";
+import { KIND_ICON } from "./QuestCard";
+import { LadderCard, StatusPill, laddersFor, statusOf } from "./QuestStatus";
 import { Task } from "./Task";
 import { Tracker } from "./Tracker";
-import { Cta, Shapes } from "./ui";
+import { Cta, Icon, Shapes } from "./ui";
+import { KIND_LABEL, questXp, type Quest } from "@/lib/data/quests";
 import { PACE_COPY, daysTo, pace } from "@/lib/progress";
 import { myTasks, openTasks } from "@/lib/pick";
 import { fmt, pd, plural } from "@/lib/time";
+import type { Assignment, Work } from "@/lib/types";
 import { MILESTONES, phaseOf, qualifier, wEnd, wStart } from "@/lib/weeks";
 import { diffDays } from "@/lib/time";
 
@@ -174,6 +177,7 @@ function GoogleMark() {
 
 /** The first thing a signed-out visitor sees. The plan stays one quiet link away. */
 function SignInGate({ week }: { week: number }) {
+  const { flags } = useApp();
   const [googleOn, setGoogleOn] = useState<boolean | null>(null);
   useEffect(() => {
     fetch("/api/auth/providers")
@@ -196,28 +200,164 @@ function SignInGate({ week }: { week: number }) {
         <p className="muted small center">Use your Trinity School Google account.</p>
         {googleOn === false && <p className="muted small center">Google sign-in isn’t configured on this server yet.</p>}
       </div>
-      <Link className="signin-peek" href={`/week/${week}`}>
-        Look at this week’s plan
+      {flags.week ? (
+        <Link className="signin-peek" href={`/week/${week}`}>
+          Look at this week’s plan
+        </Link>
+      ) : (
+        <Link className="signin-peek" href="/quests">
+          Look at the quests
+        </Link>
+      )}
+    </section>
+  );
+}
+
+function StudentHero({ count, stuck }: { count: number; stuck: number }) {
+  const { person, team } = useApp();
+  const first = person.split(" ")[0];
+  const line =
+    stuck > 0
+      ? "Your coach can see where you’re stuck. Try a hint, or start another quest while you wait."
+      : count > 0
+        ? `Your coach picked ${plural(count, "quest")} for you this week.`
+        : "Nothing from your coach yet this week. Pick a next step below.";
+  return (
+    <section className="page-hero home-hero">
+      <Shapes variant="banner" />
+      <div className="wrap">
+        <div className="eyebrow light">BIOBUZZ · Team {team}</div>
+        <h1>Hi {first}</h1>
+        <p>{line}</p>
+      </div>
+    </section>
+  );
+}
+
+interface Row {
+  a: Assignment;
+  q: Quest;
+  w?: Work;
+}
+
+function AssignedRow({ a, q, w }: Row) {
+  const { flags } = useApp();
+  const s = statusOf(w);
+  return (
+    <li>
+      <Link href={`/quests/${q.id}`} className={`arow s-${s}`} style={{ ["--tc" as string]: `var(--t-${q.track})` } as React.CSSProperties}>
+        <span className="qc-ico">
+          <Icon name={s === "checked" || s === "done" ? "check" : KIND_ICON[q.kind]} size={20} />
+        </span>
+        <span className="arow-main">
+          <b>{q.title}</b>
+          <small>
+            {KIND_LABEL[q.kind]} · {q.mins} min{flags.xp ? ` · +${questXp(q)} XP` : ""}
+          </small>
+          {a.note && <em>“{a.note}” · {a.by}</em>}
+          {w?.coach && <em className="coach">Coach: “{w.coach}”</em>}
+        </span>
+        <StatusPill w={w} />
+        <Icon name="arrow" size={16} />
       </Link>
+    </li>
+  );
+}
+
+function MyQuests({ thisWeek, open, doneCount }: { thisWeek: Row[]; open: Row[]; doneCount: number }) {
+  return (
+    <section className="card my-quests" aria-labelledby="mq-h">
+      <div className="strip-head">
+        <h2 id="mq-h">Your quests</h2>
+        {doneCount > 0 && <span className="muted small">{plural(doneCount, "quest")} done so far</span>}
+      </div>
+      {thisWeek.length === 0 && open.length === 0 ? (
+        <p className="empty">Your coach hasn’t picked any quests for you yet. Start a ladder below, or ask what to work on.</p>
+      ) : (
+        <>
+          {thisWeek.length > 0 && (
+            <>
+              <div className="label">This week</div>
+              <ul className="arows">
+                {thisWeek.map(r => (
+                  <AssignedRow key={r.q.id} {...r} />
+                ))}
+              </ul>
+            </>
+          )}
+          {open.length > 0 && (
+            <>
+              <div className="label">Still open from earlier</div>
+              <ul className="arows">
+                {open.map(r => (
+                  <AssignedRow key={r.q.id} {...r} />
+                ))}
+              </ul>
+            </>
+          )}
+        </>
+      )}
     </section>
   );
 }
 
 export function HomeView() {
-  const { clock, person } = useApp();
+  const { clock, person, flags, mine, questById, focus } = useApp();
   const shown = clock.before ? 1 : clock.now;
+  const rows = useMemo(
+    () =>
+      mine.assignments
+        .filter(a => a.week <= shown)
+        .flatMap((a): Row[] => {
+          const q = questById(a.quest);
+          return q ? [{ a, q, w: mine.work[a.quest] }] : [];
+        }),
+    [mine, questById, shown],
+  );
   if (!person) return <SignInGate week={shown} />;
+
+  const thisWeek = rows.filter(r => r.a.week === shown);
+  const open = rows.filter(r => r.a.week < shown && r.w?.status !== "done");
+  const stuck = rows.filter(r => r.w?.status === "stuck").length;
+  const doneCount = Object.values(mine.work).filter(w => w.status === "done").length;
+
   return (
     <>
-      <Hero />
-      <div className="wrap overlap">
-        <Tracker selected={shown} />
-      </div>
+      {flags.season ? (
+        <>
+          <Hero />
+          <div className="wrap overlap">
+            <Tracker selected={shown} />
+          </div>
+        </>
+      ) : (
+        <StudentHero count={thisWeek.length} stuck={stuck} />
+      )}
 
-      <div className="wrap stack-lg">
-        <PaceLine />
-        <BoredBanner />
-        <NextMoves />
+      <div className={`wrap stack-lg ${flags.season ? "" : "pull"}`}>
+        {flags.season && <PaceLine />}
+        <MyQuests thisWeek={thisWeek} open={open} doneCount={doneCount} />
+
+        <section aria-labelledby="own-h">
+          <div className="strip-head">
+            <div>
+              <h2 id="own-h" className="h-section">
+                Or pick your own
+              </h2>
+              <p className="muted">Each ladder starts from zero. Do the next step.</p>
+            </div>
+            <Link className="btn sm" href="/quests">
+              All quests →
+            </Link>
+          </div>
+          <div className="ladders">
+            {laddersFor(focus).map(l => (
+              <LadderCard key={l.id} l={l} />
+            ))}
+          </div>
+        </section>
+
+        {flags.teamTasks && <NextMoves />}
       </div>
     </>
   );

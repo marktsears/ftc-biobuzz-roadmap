@@ -4,10 +4,11 @@ import { useSession } from "next-auth/react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { applyOp } from "@/lib/apply";
 import { demoTally, gateTally } from "@/lib/progress";
-import { EMPTY_STATE, TEAM_IDS, type BudgetRow, type Focus, type RemoteState, type TeamId, type WriteOp } from "@/lib/types";
+import { EMPTY_STATE, TEAM_IDS, type BudgetRow, type Flags, type Focus, type MeState, type RemoteState, type TeamId, type WorkStatus, type WriteOp } from "@/lib/types";
 import { pd, sod } from "@/lib/time";
 import { clockOf, getIndex, getWeeks, type Clock } from "@/lib/weeks";
-import { QUEST_BY_ID, questXp } from "@/lib/data/quests";
+import { QUESTS, QUEST_BY_ID, questXp, type Quest } from "@/lib/data/quests";
+import { DEFAULT_FLAGS } from "@/lib/flags";
 import { computePeople, nameKey, normName, personalLevel, type Person } from "@/lib/xp";
 import type { Week } from "@/lib/types";
 
@@ -47,7 +48,20 @@ export interface App {
   saveBudget: (rows: BudgetRow[]) => void;
   refresh: () => void;
 
+  /** your quests, the Labs switches, and whether you're an admin */
+  mine: MeState;
+  mineReady: boolean;
+  flags: Flags;
+  admin: boolean;
+  /** built-in quests plus the ones the coach wrote */
+  allQuests: Quest[];
+  questById: (id: string) => Quest | undefined;
+  /** status null clears it. Resolves true if it saved. */
+  setWork: (quest: string, status: WorkStatus | null, text?: string) => Promise<boolean>;
+  refreshMine: () => void;
+
   toasts: Toast[];
+  toast: (kind: Toast["kind"], title: string, body?: string) => void;
   dismiss: (id: number) => void;
   profileOpen: boolean;
   openProfile: () => void;
@@ -92,6 +106,7 @@ const saveLocal = (team: TeamId, s: RemoteState) => LS.set("tr-local-" + team, J
 
 const POLL_MS = 20000;
 let toastSeq = 1;
+const EMPTY_ME: MeState = { db: false, admin: false, flags: DEFAULT_FLAGS, assignments: [], work: {}, custom: [], profile: null };
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [booted, setBooted] = useState(false);
@@ -108,6 +123,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [offline, setOffline] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mine, setMine] = useState<MeState>(EMPTY_ME);
+  const [mineReady, setMineReady] = useState(false);
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -205,10 +222,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void load(team, true);
   }, [team, booted, load]);
 
+  /* ----- your quests and the Labs switches ----- */
+  const emailRef = useRef(email);
+  emailRef.current = email;
+  const syncedRef = useRef("");
+  const [syncedFor, setSyncedFor] = useState("");
+  const loadMine = useCallback(async () => {
+    try {
+      const r = await fetch("/api/me", { cache: "no-store" });
+      if (!r.ok) throw new Error(String(r.status));
+      const data = (await r.json()) as MeState;
+      setMine(data);
+      /* this browser may have last been used by someone else, so the saved team and focus win at sign-in */
+      const p = data.profile;
+      if (p && p.email === emailRef.current && syncedRef.current !== p.email) {
+        syncedRef.current = p.email;
+        if (p.team) {
+          LS.set("tr-team", p.team);
+          setTeamS(p.team);
+        }
+        if (p.focus) {
+          LS.set("tr-focus", p.focus);
+          setFocusS(p.focus);
+        }
+        setSyncedFor(p.email);
+      }
+    } catch {
+      // keep what we had; the defaults hide the team tools
+    } finally {
+      setMineReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!booted || status === "loading") return;
+    void loadMine();
+  }, [booted, status, email, loadMine]);
+
+  /* tell the server your team and focus, so the coach's roster knows */
+  useEffect(() => {
+    if (!booted || !person || !mine.db || !email || syncedFor !== email) return;
+    void fetch("/api/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ op: "profile", team, focus }) }).catch(() => undefined);
+  }, [booted, person, mine.db, email, syncedFor, team, focus]);
+
   useEffect(() => {
     if (!booted) return;
     const poll = () => {
-      if (document.visibilityState === "visible" && pending.current === 0) void load(team);
+      if (document.visibilityState !== "visible") return;
+      if (pending.current === 0) void load(team);
+      void loadMine();
     };
     const id = setInterval(poll, POLL_MS);
     document.addEventListener("visibilitychange", poll);
@@ -216,7 +278,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
       clearInterval(id);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [team, booted, load]);
+  }, [team, booted, load, loadMine]);
+
+  const allQuests = useMemo(() => [...QUESTS, ...mine.custom.filter(c => !QUEST_BY_ID[c.id])], [mine.custom]);
+  const questMap = useMemo(() => Object.fromEntries(allQuests.map(q => [q.id, q])) as Record<string, Quest>, [allQuests]);
+
+  const setWork = useCallback(
+    async (quest: string, st: WorkStatus | null, text?: string) => {
+      if (!person) {
+        setProfileOpen(true);
+        return false;
+      }
+      if (!mine.db) {
+        toast("error", "Can’t save yet", "The site isn’t connected to its database.");
+        return false;
+      }
+      try {
+        const r = await fetch("/api/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ op: "work", quest, status: st, text }) });
+        const data = (await r.json().catch(() => ({}))) as MeState & { error?: string };
+        if (!r.ok) throw new Error(data.error || "Couldn’t save");
+        setMine(data);
+        const q = questMap[quest];
+        if (st === "done") toast("xp", mine.flags.xp && q ? `+${questXp(q)} XP` : "Nice work", "Your coach can see it now.");
+        else if (st === "stuck") toast("info", "Your coach can see you’re stuck", "Try a hint while you wait.");
+        else if (st === "doing") toast("info", "Started", "It’s on your list on Home.");
+        void load(team);
+        return true;
+      } catch (e) {
+        toast("error", "Didn’t save", e instanceof Error ? e.message : "Try again.");
+        return false;
+      }
+    },
+    [person, mine.db, mine.flags.xp, questMap, toast, load, team],
+  );
 
   /* ----- derived: people, XP, me ----- */
   const people = useMemo(() => computePeople(state, team, clock.now), [state, team, clock.now]);
@@ -284,11 +378,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const gain = after.xp - xpB;
     const lb = personalLevel(xpB);
     const la = personalLevel(after.xp);
-    if (la.idx > lb.idx) {
+    if (la.idx > lb.idx && mine.flags.xp) {
       toast("level", `Level up: ${la.name}`, "Nice work.");
-    } else if (op.op === "quest" && op.on) {
-      toast("xp", `+${questXp(QUEST_BY_ID[op.quest])} XP`, "Quest complete");
-    } else if (op.op === "check" && op.on && gain > 0) {
+    } else if (op.op === "check" && op.on && gain > 0 && mine.flags.xp) {
       toast("xp", `+${gain} XP`);
     } else if (op.op === "claim" && op.on) {
       toast("info", "It’s yours", "Tick it off when it’s done.");
@@ -308,8 +400,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // once the page has shown, a background session refresh must not swap it for the placeholder
+  const wasReady = useRef(false);
+  if (booted && status !== "loading" && mineReady) wasReady.current = true;
+
   const value: App = {
-    ready: booted && status !== "loading",
+    ready: wasReady.current,
     team,
     setTeam: t => {
       LS.set("tr-team", t);
@@ -358,7 +454,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     quest: (id, on, note) => void write({ op: "quest", quest: id, on, note }),
     saveBudget: rows => void write({ op: "budget", rows }),
     refresh: () => void load(team),
+    mine,
+    mineReady,
+    flags: mine.flags,
+    admin: mine.admin,
+    allQuests,
+    questById: id => questMap[id],
+    setWork,
+    refreshMine: () => void loadMine(),
     toasts,
+    toast,
     dismiss,
     profileOpen,
     openProfile: () => setProfileOpen(true),
