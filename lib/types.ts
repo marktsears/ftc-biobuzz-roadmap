@@ -207,6 +207,8 @@ export interface MeState {
   custom: import("./data/quests").Quest[];
   /** the team and focus saved for whoever is signed in */
   profile: Pick<Student, "email" | "team" | "focus"> | null;
+  /** stuck, or done and not checked. Only filled in for a coach. */
+  needs: number;
 }
 
 /** What /api/coach returns. */

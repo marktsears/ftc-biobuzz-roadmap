@@ -1,5 +1,6 @@
 import "server-only";
 import { auth } from "@/auth";
+import { QUIZ_CHECKER } from "./coach";
 import { QUEST_BY_ID } from "./data/quests";
 import { DEFAULT_FLAGS } from "./flags";
 import { isAdmin, isAllowedAccount, normEmail } from "./identity";
@@ -38,6 +39,14 @@ export async function getViewer(settings: Settings): Promise<Viewer | null> {
   const name = normName(session.user.name || "");
   if (!name || name.length > NAME_MAX) return null;
   return { email, name, admin: isAdmin(email, settings.admins) };
+}
+
+/** A passed quiz that was saved before checks happened in the same write. Marks it checked. */
+export async function acceptPassedQuizzes(store: Store): Promise<void> {
+  const [work, custom] = await Promise.all([store.work(), store.customQuests()]);
+  const customQuiz = new Set(custom.filter(c => c.quest.quiz).map(c => c.quest.id));
+  const pending = work.filter(w => w.status === "done" && !w.checkedBy && (!!QUEST_BY_ID[w.quest]?.quiz || customQuiz.has(w.quest)));
+  for (const w of pending) await store.review(w.email, w.quest, QUIZ_CHECKER, true);
 }
 
 /** A built-in quest, or one the coach wrote and hasn't archived. */

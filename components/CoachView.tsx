@@ -8,6 +8,7 @@ import { AddStudents, InviteDialog } from "./ClassInvite";
 import { KIND_ICON } from "./kindIcon";
 import { StatusPill, statusOf } from "./QuestStatus";
 import { Avatar, Icon, Shapes } from "./ui";
+import { carryForward, ladderById, needsAttention, nextUnassigned } from "@/lib/coach";
 import { CUSTOM_TRACKS, EMPTY_DRAFT, questToDraft, type QuestDraft } from "@/lib/customQuest";
 import { TRACKS } from "@/lib/data/core";
 import { LADDERS, LADDER_OF } from "@/lib/data/ladders";
@@ -85,7 +86,12 @@ export function CoachView() {
         <div className="wrap">
           <div className="eyebrow light">Coach</div>
           <h1>Your class</h1>
-          <p>Pick quests for each student. They see them on Home, and you see when they’re stuck or done.</p>
+          <p>Pick quests for each student. They see them when they sign in, and you see when they’re stuck or done.</p>
+        </div>
+      </section>
+
+      <div className="coach-tabbar">
+        <div className="wrap">
           <nav className="coach-tabs" aria-label="Coach pages">
             {(
               [
@@ -94,13 +100,13 @@ export function CoachView() {
                 ["labs", "Labs"],
               ] as [Tab, string][]
             ).map(([t, label]) => (
-              <button key={t} type="button" aria-pressed={tab === t} onClick={() => router.replace(t === "class" ? "/coach" : `/coach?tab=${t}`, { scroll: false })}>
+              <button key={t} type="button" aria-pressed={tab === t} onClick={() => router.replace(t === "class" ? "/" : `/?tab=${t}`, { scroll: false })}>
                 {label}
               </button>
             ))}
           </nav>
         </div>
-      </section>
+      </div>
 
       <div className="wrap stack-lg pull">
         {err && <p className="card error-card">{err}</p>}
@@ -116,9 +122,11 @@ export function CoachView() {
 /* ====================== Class ====================== */
 
 function ClassTab({ data, post }: { data: CoachState; post: Post }) {
-  const { clock, questById, toast } = useApp();
-  const [week, setWeek] = useState(clock.before ? 1 : clock.now);
+  const { clock, questById, toast, weeks } = useApp();
+  const lastWeek = Math.max(1, weeks.length);
+  const [week, setWeek] = useState(Math.min(lastWeek, Math.max(1, clock.before ? 1 : clock.now)));
   const [team, setTeam] = useState<TeamId | "all" | "none">("all");
+  const [who, setWho] = useState<"all" | "attention" | "empty" | "waiting">("all");
   const [find, setFind] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<string | null>(null);
@@ -126,6 +134,14 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
   const [adding, setAdding] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [carryAsk, setCarryAsk] = useState(false);
+  const [goodAsk, setGoodAsk] = useState(false);
+
+  useEffect(() => {
+    setPicked(new Set());
+    setConfirmRemove(false);
+    setCarryAsk(false);
+  }, [team, find, who]);
 
   const listed = data.students.filter(s => s.listed);
   const unlisted = data.students.filter(s => !s.listed);
@@ -140,9 +156,17 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
     return m;
   }, [data]);
 
-  const students = listed.filter(
-    s => (team === "all" || (team === "none" ? !s.team : s.team === team)) && (!find.trim() || `${s.name} ${s.email}`.toLowerCase().includes(find.trim().toLowerCase())),
-  );
+  const onTeam = (s: Student) => team === "all" || (team === "none" ? !s.team : s.team === team);
+  const students = listed.filter(s => {
+    if (!onTeam(s)) return false;
+    if (find.trim() && !`${s.name} ${s.email}`.toLowerCase().includes(find.trim().toLowerCase())) return false;
+    const info = byEmail[s.email];
+    if (who === "attention") return Object.values(info.work).some(needsAttention);
+    if (who === "empty") return !info.assigned.some(a => a.week === week);
+    if (who === "waiting") return !s.seen;
+    return true;
+  });
+  const allShown = students.length > 0 && students.every(s => picked.has(s.email));
   const pickedList = [...picked];
   const bulk = async (body: Record<string, unknown>, done: string) => {
     if (await post({ ...body, emails: pickedList })) {
@@ -161,9 +185,15 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
   };
   const nameOf = (email: string) => data.students.find(s => s.email === email)?.name ?? email;
 
+  const teamOf = (email: string) => data.students.find(s => s.email === email)?.team ?? null;
   const needs = data.work
-    .filter(w => w.status === "stuck" || (w.status === "done" && !w.checkedBy))
+    .filter(needsAttention)
+    .filter(w => team === "all" || (team === "none" ? !teamOf(w.email) : teamOf(w.email) === team))
     .sort((a, b) => (a.status === "stuck" ? 0 : 1) - (b.status === "stuck" ? 0 : 1) || b.at.localeCompare(a.at));
+  const stuckNeeds = needs.filter(w => w.status === "stuck");
+  const readyNeeds = needs.filter(w => w.status !== "stuck");
+  const carryEmails = picked.size ? pickedList : students.map(s => s.email);
+  const carryCount = week < lastWeek ? carryForward(data.assignments, data.work, carryEmails, week, week + 1).length : 0;
 
   const toggle = (email: string) =>
     setPicked(p => {
@@ -183,11 +213,56 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
         {needs.length === 0 ? (
           <p className="empty">Nobody is stuck, and there’s nothing waiting to be checked.</p>
         ) : (
-          <ul className="need-list">
-            {needs.map(w => (
-              <NeedRow key={w.email + w.quest} w={w} name={nameOf(w.email)} q={questById(w.quest)} post={post} />
-            ))}
-          </ul>
+          <>
+            {stuckNeeds.length > 0 && (
+              <>
+                <div className="label">Stuck</div>
+                <ul className="need-list">
+                  {stuckNeeds.map(w => (
+                    <NeedRow key={w.email + w.quest} w={w} name={nameOf(w.email)} q={questById(w.quest)} post={post} />
+                  ))}
+                </ul>
+              </>
+            )}
+            {readyNeeds.length > 0 && (
+              <>
+                <div className="strip-head">
+                  <div className="label">Ready to check</div>
+                  {goodAsk ? (
+                    <span className="need-actions">
+                      <span className="muted small">Mark {plural(readyNeeds.length, "quest")} checked?</span>
+                      <button type="button" className="link-btn" onClick={() => setGoodAsk(false)}>
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="btn ok-btn"
+                        onClick={async () => {
+                          const list = readyNeeds.map(w => ({ email: w.email, quest: w.quest }));
+                          for (const w of list) {
+                            if (!(await post({ op: "review", email: w.email, quest: w.quest, ok: true }))) return;
+                          }
+                          toast("info", `Checked ${plural(list.length, "quest")}`);
+                          setGoodAsk(false);
+                        }}
+                      >
+                        <Icon name="check" size={16} /> Looks good
+                      </button>
+                    </span>
+                  ) : (
+                    <button type="button" className="btn sm" onClick={() => setGoodAsk(true)}>
+                      Looks good for all
+                    </button>
+                  )}
+                </div>
+                <ul className="need-list">
+                  {readyNeeds.map(w => (
+                    <NeedRow key={w.email + w.quest} w={w} name={nameOf(w.email)} q={questById(w.quest)} post={post} />
+                  ))}
+                </ul>
+              </>
+            )}
+          </>
         )}
       </section>
 
@@ -245,7 +320,7 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
                   Week {week}
                   {week === clock.now ? " · this week" : ""}
                 </span>
-                <button type="button" className="icon-btn" onClick={() => setWeek(w => w + 1)} aria-label="Next week">
+                <button type="button" className="icon-btn" disabled={week >= lastWeek} onClick={() => setWeek(w => Math.min(lastWeek, w + 1))} aria-label="Next week">
                   <Icon name="arrow" size={16} />
                 </button>
               </div>
@@ -256,7 +331,43 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
                   </button>
                 ))}
               </div>
+              <div className="chips">
+                {(
+                  [
+                    ["all", "Everyone"],
+                    ["attention", "Needs attention"],
+                    ["empty", "Nothing this week"],
+                    ["waiting", "Hasn’t signed in"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button key={id} type="button" className={`chip ${who === id ? "on" : ""}`} aria-pressed={who === id} onClick={() => setWho(id)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
               <input className="find" value={find} onChange={e => setFind(e.target.value)} placeholder="Find a student" aria-label="Find a student" />
+              <label className="toggle">
+                <input type="checkbox" checked={allShown} onChange={() => setPicked(allShown ? new Set() : new Set(students.map(s => s.email)))} />
+                {allShown ? "Clear" : `Select all ${students.length}`}
+              </label>
+              {(team === "2827" || team === "3587") && (
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={() => {
+                    const emails = listed.filter(s => s.team === team).map(s => s.email);
+                    setPicked(new Set(emails));
+                    setAssignTo(emails);
+                  }}
+                >
+                  Assign to Team {team}
+                </button>
+              )}
+              {week < lastWeek && (
+                <button type="button" className="link-btn" onClick={() => setCarryAsk(true)}>
+                  Move unfinished to Week {week + 1}
+                </button>
+              )}
             </div>
 
               <ul className="roster-list">
@@ -312,6 +423,36 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
         </section>
       )}
 
+      {carryAsk && (
+        <div className="card" role="region" aria-label="Move unfinished quests">
+          <p>
+            {carryCount
+              ? `Move ${plural(carryCount, "unfinished quest")} for ${plural(carryEmails.length, "student")} from Week ${week} to Week ${week + 1}. They leave this week and show up next week.`
+              : "Nothing unfinished to move."}
+          </p>
+          <div className="need-actions">
+            <button type="button" className="link-btn" onClick={() => setCarryAsk(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={!carryCount}
+              onClick={async () => {
+                const ok = await post({ op: "carryOver", emails: carryEmails, fromWeek: week });
+                if (ok) {
+                  toast("info", `Moved ${plural(carryCount, "quest")} to Week ${week + 1}`);
+                  setCarryAsk(false);
+                  setPicked(new Set());
+                }
+              }}
+            >
+              Move them
+            </button>
+          </div>
+        </div>
+      )}
+
       {picked.size > 0 && (
         <div className="bulk-bar" role="region" aria-label="Selected students">
           {confirmRemove ? (
@@ -340,6 +481,11 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
               <button type="button" className="link-btn light" onClick={() => setConfirmRemove(true)}>
                 Remove
               </button>
+              {week < lastWeek && (
+                <button type="button" className="link-btn light" onClick={() => setCarryAsk(true)}>
+                  Move unfinished
+                </button>
+              )}
               <button type="button" className="cta solid" onClick={() => setAssignTo(pickedList)}>
                 <span>Assign quests</span>
                 <i className="cta-dot" aria-hidden="true">
@@ -365,6 +511,26 @@ function ClassTab({ data, post }: { data: CoachState; post: Post }) {
             const ok = await post({ op: "assign", emails: assignTo, quests, week, note });
             if (ok) {
               toast("info", `Assigned for Week ${week}`, `${plural(quests.length, "quest")} for ${assignTo.length === 1 ? nameOf(assignTo[0]) : plural(assignTo.length, "student")}.`);
+              setAssignTo(null);
+              setPicked(new Set());
+            }
+            return ok;
+          }}
+          onNext={async ladder => {
+            const spec = ladderById(ladder);
+            if (!spec) return false;
+            const getting = assignTo.filter(email => {
+              const done = new Set(data.work.filter(w => w.email === email && w.status === "done").map(w => w.quest));
+              const assigned = new Set(data.assignments.filter(a => a.email === email).map(a => a.quest));
+              return !!nextUnassigned(spec.steps, done, assigned);
+            });
+            if (!getting.length) {
+              toast("info", "Nothing new to assign", "Each of them already has the next step, or has finished this ladder.");
+              return false;
+            }
+            const ok = await post({ op: "assignNext", emails: assignTo, ladder, week });
+            if (ok) {
+              toast("info", `Next step for Week ${week}`, `${plural(getting.length, "student")}.`);
               setAssignTo(null);
               setPicked(new Set());
             }
@@ -505,11 +671,14 @@ function RosterRow({
           {thisWeek.length === 0 ? (
             <span className="muted small">Nothing for Week {week}</span>
           ) : (
-            thisWeek.map(a => (
-              <span key={a.quest} className={`qchip s-${statusOf(info.work[a.quest])}`} title={`${questById(a.quest)?.title ?? a.quest}: ${statusOf(info.work[a.quest])}`}>
-                {questById(a.quest)?.title ?? a.quest}
-              </span>
-            ))
+            <>
+              {thisWeek.slice(0, 2).map(a => (
+                <span key={a.quest} className={`qchip s-${statusOf(info.work[a.quest])}`} title={`${questById(a.quest)?.title ?? a.quest}: ${statusOf(info.work[a.quest])}`}>
+                  {questById(a.quest)?.title ?? a.quest}
+                </span>
+              ))}
+              {thisWeek.length > 2 && <span className="qchip">+{thisWeek.length - 2}</span>}
+            </>
           )}
         </div>
         <button type="button" className="btn sm" onClick={onAssign}>
@@ -570,6 +739,7 @@ function QuestPicker({
   data,
   onClose,
   onAssign,
+  onNext,
   starter,
 }: {
   emails: string[];
@@ -578,15 +748,18 @@ function QuestPicker({
   data: CoachState;
   onClose: () => void;
   onAssign: (quests: string[], note: string) => Promise<boolean>;
+  /** give each student their own next unfinished, unassigned step on a ladder */
+  onNext?: (ladderId: string) => Promise<boolean>;
   /** pick the starter set instead of assigning */
   starter?: string[];
 }) {
-  const { allQuests } = useApp();
+  const { allQuests, person } = useApp();
   const ref = useRef<HTMLDialogElement>(null);
   const [find, setFind] = useState("");
   const [sel, setSel] = useState<string[]>(starter ?? []);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [closed, setClosed] = useState<Record<string, boolean>>({ "More quests": true });
 
   useEffect(() => {
     const d = ref.current;
@@ -596,8 +769,19 @@ function QuestPicker({
   const doneBy = (id: string) => data.work.filter(w => w.quest === id && w.status === "done" && emails.includes(w.email)).length;
   const already = (id: string) => data.assignments.filter(a => a.quest === id && emails.includes(a.email)).length;
   const match = (q: Quest) => !find.trim() || `${q.title} ${q.blurb} ${KIND_LABEL[q.kind]} ${TRACKS[q.track].short}`.toLowerCase().includes(find.trim().toLowerCase());
-  const groups: { name: string; quests: Quest[] }[] = [
-    ...LADDERS.map(l => ({ name: l.name, quests: l.steps.map(id => allQuests.find(q => q.id === id)).filter((q): q is Quest => !!q) })),
+  const recent: Quest[] = [];
+  const seenRecent = new Set<string>();
+  for (const a of [...data.assignments].filter(a => a.by === person).sort((a, b) => b.at.localeCompare(a.at))) {
+    if (seenRecent.has(a.quest)) continue;
+    const q = allQuests.find(q => q.id === a.quest);
+    if (!q || !match(q)) continue;
+    seenRecent.add(a.quest);
+    recent.push(q);
+    if (recent.length === 8) break;
+  }
+  const groups: { name: string; ladder?: string; quests: Quest[] }[] = [
+    ...(recent.length ? [{ name: "Recent", quests: recent }] : []),
+    ...LADDERS.map(l => ({ name: l.name, ladder: l.id, quests: l.steps.map(id => allQuests.find(q => q.id === id)).filter((q): q is Quest => !!q) })),
     { name: "Quests you wrote", quests: data.custom },
     { name: "More quests", quests: allQuests.filter(q => !LADDER_OF[q.id] && !q.id.startsWith("c-")) },
   ]
@@ -631,8 +815,26 @@ function QuestPicker({
         <div className="picker-list">
           {groups.map(g => (
             <div key={g.name} className="pk-group">
-              <div className="label">{g.name}</div>
-              {g.quests.map(q => {
+              <div className="pk-head">
+                <button type="button" className="label pk-toggle" aria-expanded={!closed[g.name]} onClick={() => setClosed(c => ({ ...c, [g.name]: !c[g.name] }))}>
+                  {closed[g.name] ? "▸" : "▾"} {g.name}
+                </button>
+                {g.ladder && onNext && !starter && (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      await onNext(g.ladder!);
+                      setBusy(false);
+                    }}
+                  >
+                    Assign next step
+                  </button>
+                )}
+              </div>
+              {!closed[g.name] && g.quests.map(q => {
                 const d = doneBy(q.id);
                 const a = already(q.id);
                 return (

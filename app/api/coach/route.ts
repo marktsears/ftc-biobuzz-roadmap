@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { carryForward, ladderById, nextUnassigned } from "@/lib/coach";
 import { cleanQuest, draftToQuest, type QuestDraft } from "@/lib/customQuest";
 import { readFlags } from "@/lib/flags";
 import { fixedAdmins, isAdmin, normEmail } from "@/lib/identity";
@@ -6,14 +7,18 @@ import { getStore } from "@/lib/store";
 import type { Store } from "@/lib/store/types";
 import { isSchoolEmail, shortName } from "@/lib/roster";
 import { TEAM_IDS, type CoachState, type Settings, type TeamId } from "@/lib/types";
-import { getViewer, giveStarter, loadSettings, questExists } from "@/lib/viewer";
+import { acceptPassedQuizzes, getViewer, giveStarter, loadSettings, questExists } from "@/lib/viewer";
+import { getWeeks } from "@/lib/weeks";
 
 export const dynamic = "force-dynamic";
 
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
 const emailList = (v: unknown) => [...new Set((Array.isArray(v) ? v : []).map(e => normEmail(String(e))).filter(e => e.includes("@")))].slice(0, 300);
 
+const planLength = () => getWeeks("2827").length;
+
 async function snapshot(store: Store, settings: Settings): Promise<CoachState> {
+  await acceptPassedQuizzes(store);
   const [people, assignments, work, custom] = await Promise.all([store.students(), store.assignments(), store.work(), store.customQuests()]);
   const students = people.filter(s => !isAdmin(s.email, settings.admins));
   const live = custom.filter(c => !c.archived).map(c => cleanQuest(c.quest)).filter(q => !!q);
@@ -118,6 +123,37 @@ export async function POST(req: Request) {
         const ids = [...new Set((Array.isArray(body.quests) ? body.quests : []).map(String))].slice(0, 8);
         for (const id of ids) if (!(await questExists(store, id))) return json({ error: `Unknown quest: ${id}` }, 400);
         await store.saveSettings({ starter: ids });
+        break;
+      }
+      case "carryOver": {
+        const known = new Set((await store.students()).map(s => s.email));
+        const emails = emailList(body.emails).filter(e => known.has(e));
+        const fromWeek = Math.round(Number(body.fromWeek));
+        const max = planLength();
+        if (!emails.length) return json({ error: "Pick at least one student" }, 400);
+        if (!Number.isFinite(fromWeek) || fromWeek < 1 || fromWeek >= max) return json({ error: "That week can’t be moved forward" }, 400);
+        const [assignments, work] = await Promise.all([store.assignments(), store.work()]);
+        const rows = carryForward(assignments, work, emails, fromWeek, fromWeek + 1);
+        if (rows.length) await store.assign(rows);
+        break;
+      }
+      case "assignNext": {
+        const ladder = ladderById(String(body.ladder ?? ""));
+        if (!ladder) return json({ error: "Unknown ladder" }, 400);
+        const known = new Set((await store.students()).map(s => s.email));
+        const emails = emailList(body.emails).filter(e => known.has(e));
+        const week = Math.round(Number(body.week));
+        const max = planLength();
+        if (!emails.length) return json({ error: "Pick at least one student" }, 400);
+        if (!Number.isFinite(week) || week < 1 || week > max) return json({ error: "Bad week" }, 400);
+        const [assignments, work] = await Promise.all([store.assignments(), store.work()]);
+        const rows = emails.flatMap(email => {
+          const done = new Set(work.filter(w => w.email === email && w.status === "done").map(w => w.quest));
+          const assigned = new Set(assignments.filter(a => a.email === email).map(a => a.quest));
+          const quest = nextUnassigned(ladder.steps, done, assigned);
+          return quest ? [{ email, quest, week, by: v.name, note }] : [];
+        });
+        if (rows.length) await store.assign(rows);
         break;
       }
       default:

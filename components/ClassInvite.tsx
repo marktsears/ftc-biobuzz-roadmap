@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { encode } from "uqr";
 import { useApp } from "./AppProvider";
 import { Icon } from "./ui";
-import { isSchoolEmail, parsePaste, shortName } from "@/lib/roster";
+import { isSchoolEmail, parsePaste, shortName, unreadPaste } from "@/lib/roster";
 import { plural } from "@/lib/time";
 import { TEAM_IDS, type CoachState, type TeamId } from "@/lib/types";
 
@@ -147,13 +147,15 @@ export function AddStudents({ data, post, team: startTeam, onClose }: { data: Co
   }, []);
 
   const known = useMemo(() => new Map(data.students.map(s => [s.email, s])), [data.students]);
-  const { add, already, bad } = useMemo(() => {
+  const { add, already, bad, unread } = useMemo(() => {
     const coaches = new Set([...data.fixedAdmins, ...data.settings.admins]);
-    const rows = parsePaste(text).filter(r => !coaches.has(r.email));
+    const parsed = parsePaste(text);
+    const rows = parsed.filter(r => !coaches.has(r.email));
     return {
       add: rows.filter(r => isSchoolEmail(r.email) && !known.get(r.email)?.listed),
       already: rows.filter(r => isSchoolEmail(r.email) && known.get(r.email)?.listed),
       bad: rows.filter(r => !isSchoolEmail(r.email)),
+      unread: unreadPaste(text, parsed.map(r => r.email)),
     };
   }, [text, data, known]);
 
@@ -217,7 +219,8 @@ export function AddStudents({ data, post, team: startTeam, onClose }: { data: Co
                   Can’t sign in: {bad.map(r => r.email).join(", ")}. Only @tsdch.org Google accounts can use the site.
                 </p>
               )}
-              {!add.length && !already.length && !bad.length && <p className="muted small">No email addresses in that yet.</p>}
+              {unread.length > 0 && <p className="paste-bad small">Couldn’t read: {unread.join(", ")}.</p>}
+              {!add.length && !already.length && !bad.length && !unread.length && <p className="muted small">No email addresses in that yet.</p>}
             </div>
           )}
 

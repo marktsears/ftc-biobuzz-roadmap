@@ -7,7 +7,8 @@ import { KIND_ICON, QuestCard } from "./QuestCard";
 import { LadderCard, doneSet, laddersFor } from "./QuestStatus";
 import { Task } from "./Task";
 import { Icon, Shapes } from "./ui";
-import { KIND_LABEL, LEVEL_LABEL, type QuestKind, type QuestLevel } from "@/lib/data/quests";
+import { nextRung } from "@/lib/data/ladders";
+import { KIND_LABEL, LEVEL_LABEL, type Quest, type QuestKind, type QuestLevel } from "@/lib/data/quests";
 import { TRACKS } from "@/lib/data/core";
 import { iso } from "@/lib/time";
 import { openTasks, questCrew, rankQuests } from "@/lib/pick";
@@ -22,18 +23,33 @@ const TIMES: { label: string; max: number | undefined }[] = [
 const KINDS = Object.keys(KIND_LABEL) as QuestKind[];
 
 export function QuestBoard() {
-  const { state, person, focus, clock, weeks, mine, allQuests, flags } = useApp();
+  const { state, person, focus, clock, weeks, mine, allQuests, flags, admin } = useApp();
   const done = useMemo(() => doneSet(mine.work), [mine.work]);
   const day = iso(clock.today);
+  const trackBase: Focus = admin ? "all" : focus;
 
   const [maxMins, setMaxMins] = useState<number | undefined>(undefined);
   const [kind, setKind] = useState<QuestKind | "all">("all");
   const [level, setLevel] = useState<QuestLevel | "all">("all");
-  const [track, setTrack] = useState<Focus>(focus);
+  const [track, setTrack] = useState<Focus>(trackBase);
   const [hideDone, setHideDone] = useState(false);
+  const [query, setQuery] = useState("");
+  const [more, setMore] = useState(false);
+  const extraOn = (level !== "all" ? 1 : 0) + (track !== trackBase ? 1 : 0) + (!admin && hideDone ? 1 : 0);
 
-  const ranked = useMemo(() => rankQuests({ quests: allQuests, done, focus: track, week: clock.now, seed: day, includeDone: true }), [allQuests, done, track, clock.now, day]);
-  const shown = ranked.filter(q => (!maxMins || q.mins <= maxMins) && (kind === "all" || q.kind === kind) && (level === "all" || q.level === level) && (track === "all" || q.track === track) && (!hideDone || !done.has(q.id)));
+  const ranked = useMemo(() => rankQuests({ quests: allQuests, done, focus: track, week: clock.now, seed: day, includeDone: true, stable: true }), [allQuests, done, track, clock.now, day]);
+  const qtext = query.trim().toLowerCase();
+  const shown = ranked.filter(q => (!maxMins || q.mins <= maxMins) && (kind === "all" || q.kind === kind) && (level === "all" || q.level === level) && (track === "all" || q.track === track) && (!hideDone || !done.has(q.id)) && (!qtext || `${q.title} ${q.blurb}`.toLowerCase().includes(qtext)));
+  const suggestions = useMemo(() => {
+    const out: Quest[] = [];
+    for (const l of laddersFor(focus)) {
+      const id = nextRung(l, done);
+      const q = id ? allQuests.find(x => x.id === id) : undefined;
+      if (q) out.push(q);
+      if (out.length === 3) break;
+    }
+    return out;
+  }, [focus, done, allQuests]);
   const mineDone = allQuests.filter(q => done.has(q.id)).length;
   const tasks = useMemo(() => (flags.teamTasks ? openTasks(weeks, state, focus, clock).slice(0, 5) : []), [flags.teamTasks, weeks, state, focus, clock]);
 
@@ -43,9 +59,13 @@ export function QuestBoard() {
         <Shapes variant="banner" />
         <div className="wrap">
           <div className="eyebrow light">Quests</div>
-          <h1>Not sure what to do?</h1>
-          <p>Every quest is small enough to finish today. Pick a ladder and do the next step, or find one below.</p>
-          {person && (
+          <h1>{admin ? "Every quest" : "Not sure what to do?"}</h1>
+          <p>
+            {admin
+              ? "Open one to read the steps, the time, and what a student has to show you. Assigning still happens from your class."
+              : "Every quest is small enough to finish today. Pick a ladder and do the next step, or find one below."}
+          </p>
+          {person && !admin && (
             <div className="quest-progress">
               <b>{mineDone}</b> of {allQuests.length} done
             </div>
@@ -54,19 +74,34 @@ export function QuestBoard() {
       </section>
 
       <div className="wrap stack-lg pull">
-        <section aria-labelledby="ladders-h" className="card ladders-card">
-          <div className="strip-head">
-            <h2 id="ladders-h">Ladders</h2>
-            <span className="muted small">Each one starts from zero and ends with real robot work.</span>
-          </div>
+        <details className="card ladders-card">
+          <summary id="ladders-h">Ladders</summary>
+          <p className="muted small">{admin ? "Students climb these in order. Open a step to read it before you assign it." : "Each one starts from zero and ends with real robot work."}</p>
           <div className="ladders">
-            {laddersFor(focus).map(l => (
-              <LadderCard key={l.id} l={l} />
+            {laddersFor(admin ? "all" : focus).map(l => (
+              <LadderCard key={l.id} l={l} coach={admin} />
             ))}
           </div>
-        </section>
+        </details>
+
+        {!admin && suggestions.length > 0 && (
+          <section aria-labelledby="next-h">
+            <h2 id="next-h" className="h-section">
+              Next for you
+            </h2>
+            <div className="qgrid">
+              {suggestions.map(q => (
+                <QuestCard key={q.id} q={q} done={done.has(q.id)} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="filters card" aria-label="Find a quest">
+          <label className="field">
+            <span className="label">Search</span>
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search quests" aria-label="Search quests" />
+          </label>
           <div className="f-row">
             <span className="label">How much time?</span>
             <div className="chips">
@@ -78,7 +113,7 @@ export function QuestBoard() {
             </div>
           </div>
           <div className="f-row">
-            <span className="label">What sounds good?</span>
+            <span className="label">{admin ? "Kind" : "What sounds good?"}</span>
             <div className="chips">
               <button type="button" className={`chip ${kind === "all" ? "on" : ""}`} aria-pressed={kind === "all"} onClick={() => setKind("all")}>
                 Anything
@@ -90,29 +125,38 @@ export function QuestBoard() {
               ))}
             </div>
           </div>
-          <div className="f-row">
-            <span className="label">For</span>
-            <div className="chips">
-              {(["all", "B", "S", "D", "O"] as Focus[]).map(t => (
-                <button key={t} type="button" className={`chip ${track === t ? "on" : ""}`} aria-pressed={track === t} onClick={() => setTrack(t)}>
-                  {t === "all" ? "Everything" : TRACKS[t].short}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="f-row">
-            <span className="label">Level</span>
-            <div className="chips">
-              {(["all", 1, 2, 3] as (QuestLevel | "all")[]).map(l => (
-                <button key={l} type="button" className={`chip ${level === l ? "on" : ""}`} aria-pressed={level === l} onClick={() => setLevel(l)}>
-                  {l === "all" ? "Any" : LEVEL_LABEL[l]}
-                </button>
-              ))}
-            </div>
-            <label className="toggle">
-              <input type="checkbox" checked={hideDone} onChange={e => setHideDone(e.target.checked)} /> Hide the ones I’ve done
-            </label>
-          </div>
+          <button type="button" className="link-btn" aria-expanded={more} onClick={() => setMore(m => !m)}>
+            {more ? "Fewer filters" : `More filters${extraOn ? ` (${extraOn})` : ""}`}
+          </button>
+          {more && (
+            <>
+              <div className="f-row">
+                <span className="label">{admin ? "Track" : "For"}</span>
+                <div className="chips">
+                  {(["all", "B", "S", "D", "O"] as Focus[]).map(t => (
+                    <button key={t} type="button" className={`chip ${track === t ? "on" : ""}`} aria-pressed={track === t} onClick={() => setTrack(t)}>
+                      {t === "all" ? "Everything" : TRACKS[t].short}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="f-row">
+                <span className="label">Level</span>
+                <div className="chips">
+                  {(["all", 1, 2, 3] as (QuestLevel | "all")[]).map(l => (
+                    <button key={l} type="button" className={`chip ${level === l ? "on" : ""}`} aria-pressed={level === l} onClick={() => setLevel(l)}>
+                      {l === "all" ? "Any" : LEVEL_LABEL[l]}
+                    </button>
+                  ))}
+                </div>
+                {!admin && (
+                  <label className="toggle">
+                    <input type="checkbox" checked={hideDone} onChange={e => setHideDone(e.target.checked)} /> Hide the ones I’ve done
+                  </label>
+                )}
+              </div>
+            </>
+          )}
         </section>
 
         <section aria-label="All quests">
@@ -124,7 +168,7 @@ export function QuestBoard() {
           {shown.length ? (
             <div className="qgrid">
               {shown.map(q => (
-                <QuestCard key={q.id} q={q} done={done.has(q.id)} crew={questCrew(state, q.id).length} />
+                <QuestCard key={q.id} q={q} done={admin ? false : done.has(q.id)} crew={admin ? 0 : questCrew(state, q.id).length} />
               ))}
             </div>
           ) : (
@@ -132,7 +176,7 @@ export function QuestBoard() {
           )}
         </section>
 
-        {flags.teamTasks && (
+        {!admin && flags.teamTasks && (
           <section className="card" aria-labelledby="grab-h">
             <div className="strip-head">
               <div>

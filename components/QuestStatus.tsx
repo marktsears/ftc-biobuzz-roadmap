@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useApp } from "./AppProvider";
 import { KIND_ICON } from "./kindIcon";
 import { Icon } from "./ui";
+import { QUIZ_CHECKER } from "@/lib/coach";
 import { LADDERS, nextRung, type Ladder } from "@/lib/data/ladders";
 import { KIND_LABEL } from "@/lib/data/quests";
 import { TRACKS } from "@/lib/data/core";
@@ -25,12 +26,19 @@ export const STATUS_LABEL: Record<StatusKey, string> = {
   checked: "Checked",
 };
 
+export function statusText(w: Work | undefined, short?: boolean): string {
+  const s = statusOf(w);
+  if (s === "checked" && w?.checkedBy === QUIZ_CHECKER) return "Passed";
+  if (short && s === "done") return "Done";
+  return STATUS_LABEL[s];
+}
+
 export function StatusPill({ w, short }: { w?: Work; short?: boolean }) {
   const s = statusOf(w);
   return (
     <span className={`spill s-${s}`}>
       {(s === "checked" || s === "done") && <Icon name="check" size={13} />}
-      {short && s === "done" ? "Done" : STATUS_LABEL[s]}
+      {statusText(w, short)}
     </span>
   );
 }
@@ -44,9 +52,36 @@ export function laddersFor(focus: Focus): Ladder[] {
   return [...LADDERS].sort((a, b) => Number(b.track === focus) - Number(a.track === focus));
 }
 
-/** One ladder: how far you've climbed and the next rung. */
-export function LadderCard({ l }: { l: Ladder }) {
+/** One ladder: how far you've climbed and the next rung. Coaches get the full order, with no personal progress. */
+export function LadderCard({ l, coach }: { l: Ladder; coach?: boolean }) {
   const { mine, questById } = useApp();
+  if (coach) {
+    return (
+      <section className="skill-ladder" style={{ ["--tc" as string]: `var(--t-${l.track})` } as React.CSSProperties}>
+        <div className="ld-head">
+          <div>
+            <div className="ld-track">{TRACKS[l.track].short}</div>
+            <h3>{l.name}</h3>
+          </div>
+          <span className="ld-count">{l.steps.length} steps</span>
+        </div>
+        <ol className="ld-steps">
+          {l.steps.map((id, i) => {
+            const q = questById(id);
+            return (
+              <li key={id}>
+                <Link href={`/quests/${id}`}>
+                  <span className="n">{i + 1}</span>
+                  <span>{q?.title ?? id}</span>
+                  {q && <small>{q.mins} min</small>}
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    );
+  }
   const done = doneSet(mine.work);
   const next = nextRung(l, done);
   const nq = next ? questById(next) : undefined;

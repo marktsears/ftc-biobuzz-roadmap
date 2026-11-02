@@ -1,6 +1,7 @@
 import { hs } from "./time";
 import { isOn, tasksOf, vis } from "./progress";
 import { nameKey } from "./xp";
+import { LADDERS, LADDER_OF } from "./data/ladders";
 import type { Quest, QuestKind, QuestLevel } from "./data/quests";
 import type { Clock } from "./weeks";
 import type { Focus, Item, RemoteState, Week } from "./types";
@@ -26,12 +27,22 @@ export interface PickOpts {
   kind?: QuestKind | "all";
   level?: QuestLevel | "all";
   includeDone?: boolean;
+  /** ladder order, then level, then minutes. No daily shuffle. */
+  stable?: boolean;
+}
+
+/** Where a quest sits when the list is browsed rather than shuffled. Quests on no ladder go last. */
+function ladderPos(q: Quest): number {
+  const hit = LADDER_OF[q.id];
+  if (!hit) return 100000 + q.level * 1000 + q.mins;
+  return LADDERS.findIndex(l => l.id === hit.ladder.id) * 1000 + hit.idx;
 }
 
 /** Rank quests for "what should I do right now?". Deterministic for a given seed, so a daily pick is stable. */
 export function rankQuests(o: PickOpts): Quest[] {
-  return o.quests
-    .filter(q => (o.includeDone || !o.done.has(q.id)) && (!o.maxMins || q.mins <= o.maxMins) && (!o.kind || o.kind === "all" || q.kind === o.kind) && (!o.level || o.level === "all" || q.level === o.level))
+  const list = o.quests.filter(q => (o.includeDone || !o.done.has(q.id)) && (!o.maxMins || q.mins <= o.maxMins) && (!o.kind || o.kind === "all" || q.kind === o.kind) && (!o.level || o.level === "all" || q.level === o.level));
+  if (o.stable) return [...list].sort((a, b) => ladderPos(a) - ladderPos(b) || a.level - b.level || a.mins - b.mins || a.title.localeCompare(b.title));
+  return list
     .map(q => {
       let s = jitter(o.seed + q.id);
       if (o.focus !== "all" && q.track === o.focus) s += 3;

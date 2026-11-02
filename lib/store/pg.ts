@@ -146,12 +146,15 @@ export function pgStore(url: string): Store {
         return;
       }
       await q(
-        `insert into quest_work (email, quest_id, status, proof, stuck, at) values ($1, $2, $3, $4, $5, now())
+        `insert into quest_work (email, quest_id, status, proof, stuck, checked_by, checked_at, at)
+         values ($1, $2, $3, $4, $5, $6, case when $6::text is null then null else now() end, now())
          on conflict (email, quest_id) do update set status = excluded.status,
            proof = coalesce(excluded.proof, quest_work.proof),
            stuck = case when excluded.status = 'stuck' then excluded.stuck else null end,
-           checked_by = null, checked_at = null, at = now()`,
-        [email, quest, patch.status, patch.proof ?? null, patch.stuck ?? null],
+           checked_by = excluded.checked_by,
+           checked_at = case when excluded.checked_by is null then null else now() end,
+           at = now()`,
+        [email, quest, patch.status, patch.proof ?? null, patch.stuck ?? null, patch.checkedBy ?? null],
       );
     },
     async review(email, quest, by, ok, note) {

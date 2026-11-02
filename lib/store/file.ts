@@ -152,6 +152,8 @@ export function fileStore(): Store {
           proof: patch.proof ?? was?.proof,
           stuck: patch.status === "stuck" ? patch.stuck : undefined,
           coach: was?.coach,
+          checkedBy: patch.checkedBy,
+          checkedAt: patch.checkedBy ? now() : undefined,
           at: now(),
         });
       }),

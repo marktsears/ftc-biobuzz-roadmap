@@ -7,6 +7,8 @@ export interface WorkPatch {
   status: WorkStatus;
   proof?: string;
   stuck?: string;
+  /** set in the same write, so a passed quiz is checked without a second request */
+  checkedBy?: string;
 }
 
 export interface Store {

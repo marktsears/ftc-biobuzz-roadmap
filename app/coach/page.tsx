@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { CoachView } from "@/components/CoachView";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Coach", robots: { index: false } };
-
-export default function CoachPage() {
-  return (
-    <Suspense>
-      <CoachView />
-    </Suspense>
-  );
+/** The class lives on Home for coaches. Old links land there. */
+export default async function CoachPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
+  redirect(tab === "bank" || tab === "labs" ? `/?tab=${tab}` : "/");
 }

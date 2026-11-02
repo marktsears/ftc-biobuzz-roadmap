@@ -48,6 +48,25 @@ export function parsePaste(text: string): PastedStudent[] {
 /** Only school Google accounts can sign in as students. */
 export const isSchoolEmail = (email: string) => isTrinityAccount(email);
 
+/**
+ * Bits of a paste that contain @ but were not recognized as an email.
+ * "typo@tsdch" never matches the address pattern, so it would otherwise vanish.
+ */
+export function unreadPaste(text: string, parsed: string[]): string[] {
+  const got = new Set(parsed.map(e => e.toLowerCase()));
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of text.split(/[\s,;]+/)) {
+    const token = raw.replace(/^[<"'(]+|[>"').,]+$/g, "");
+    if (!token.includes("@")) continue;
+    const key = token.toLowerCase();
+    if (got.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    out.push(token);
+  }
+  return out;
+}
+
 /** "Maya Torres" → "Maya T", the way Google names show on the site. Falls back to the part before the @. */
 export function shortName(full: string | null, email: string): string {
   const words = (full || "").trim().split(/\s+/).filter(Boolean);

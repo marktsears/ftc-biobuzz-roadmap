@@ -22,6 +22,8 @@ export interface Toast {
 
 export interface App {
   ready: boolean;
+  /** true until NextAuth knows whether anyone is signed in */
+  authLoading: boolean;
   team: TeamId;
   setTeam: (t: TeamId) => void;
   person: string;
@@ -106,7 +108,7 @@ const saveLocal = (team: TeamId, s: RemoteState) => LS.set("tr-local-" + team, J
 
 const POLL_MS = 20000;
 let toastSeq = 1;
-const EMPTY_ME: MeState = { db: false, admin: false, flags: DEFAULT_FLAGS, assignments: [], work: {}, custom: [], profile: null };
+const EMPTY_ME: MeState = { db: false, admin: false, flags: DEFAULT_FLAGS, assignments: [], work: {}, custom: [], profile: null, needs: 0 };
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [booted, setBooted] = useState(false);
@@ -407,6 +409,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value: App = {
     ready: wasReady.current,
+    authLoading: status === "loading",
     team,
     setTeam: t => {
       LS.set("tr-team", t);

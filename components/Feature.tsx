@@ -20,7 +20,7 @@ export function Feature({ flag, children }: { flag: FlagKey; children: ReactNode
             <span>
               <b>{name}</b> is off for students.
             </span>
-            <Link href="/coach?tab=labs">Labs</Link>
+            <Link href="/?tab=labs">Labs</Link>
           </div>
         </div>
         {children}

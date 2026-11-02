@@ -23,14 +23,15 @@ function useNav(): NavItem[] {
   const { clock, flags, admin } = useApp();
   const wk = clock.before ? 1 : clock.now;
   const all: NavItem[] = [
-    { href: "/", label: "Home", icon: "home", match: p => p === "/", show: true },
+    admin
+      ? { href: "/", label: "Coach", icon: "users", match: p => p === "/" || p.startsWith("/coach"), show: true }
+      : { href: "/", label: "Home", icon: "home", match: p => p === "/", show: true },
     { href: "/quests", label: "Quests", icon: "quest", match: p => p.startsWith("/quests"), show: true },
     { href: `/week/${wk}`, label: "Week", icon: "week", match: p => p.startsWith("/week"), show: flags.week },
     { href: "/season", label: "Season", icon: "map", match: p => p.startsWith("/season"), show: flags.season },
     { href: "/robot", label: "Robot", icon: "robot", match: p => p.startsWith("/robot"), show: flags.robot },
     { href: "/playbook", label: "Playbook", icon: "book", match: p => p.startsWith("/playbook"), show: flags.playbook },
     { href: "/hive", label: "Hive", icon: "hive", match: p => p.startsWith("/hive"), show: flags.hive },
-    { href: "/coach", label: "Coach", icon: "users", match: p => p.startsWith("/coach"), show: admin },
   ];
   return all.filter(n => n.show);
 }
@@ -48,8 +49,8 @@ export function BrandMark({ size = 40 }: { size?: number }) {
 export function Header() {
   const path = usePathname();
   const nav = useNav();
-  const { team, setTeam, person, openProfile, flags } = useApp();
-  const gate = !person && path === "/";
+  const { team, setTeam, person, openProfile, flags, authLoading, mine, admin } = useApp();
+  const gate = !authLoading && !person && path === "/";
   return (
     <header className="site-head">
       <div className="wrap head-in">
@@ -66,13 +67,16 @@ export function Header() {
             {nav.map(n => (
               <Link key={n.href} href={n.href} className={n.match(path) ? "on" : ""} aria-current={n.match(path) ? "page" : undefined}>
                 {n.label}
+                {admin && n.href === "/" && mine.needs > 0 && <span className="nav-count">{mine.needs}</span>}
               </Link>
             ))}
           </nav>
         )}
 
         <div className="head-tools">
-          {person && anyTeamTools(flags) && (
+          {authLoading ? (
+            <span className="me-slot" aria-hidden="true" />
+          ) : person && anyTeamTools(flags) && (
             <div className="seg" role="group" aria-label="Choose your team">
               {TEAM_IDS.map(t => (
                 <button key={t} type="button" aria-pressed={team === t} onClick={() => setTeam(t as TeamId)}>
@@ -81,7 +85,7 @@ export function Header() {
               ))}
             </div>
           )}
-          {!gate && (
+          {!authLoading && !gate && (
           <button type="button" className={person ? "me-chip" : "signin-cta"} onClick={openProfile} aria-label={person ? "Open your account" : "Sign in with Google"}>
             {person ? (
               <>
@@ -104,10 +108,10 @@ export function Header() {
 export function BottomNav() {
   const path = usePathname();
   const nav = useNav();
-  const { person } = useApp();
+  const { person, authLoading, mine, admin } = useApp();
   const [more, setMore] = useState(false);
   useEffect(() => setMore(false), [path]);
-  if (!person && path === "/") return null;
+  if (authLoading || (!person && path === "/")) return null;
   const fits = nav.length <= 5;
   const main = fits ? nav : nav.slice(0, 4);
   const rest = fits ? [] : nav.slice(4);
@@ -129,7 +133,10 @@ export function BottomNav() {
         {main.map(n => (
           <Link key={n.href} href={n.href} className={n.match(path) ? "on" : ""} aria-current={n.match(path) ? "page" : undefined}>
             <Icon name={n.icon} size={22} />
-            <span>{n.label}</span>
+            <span>
+              {n.label}
+              {admin && n.href === "/" && mine.needs > 0 ? ` ${mine.needs}` : ""}
+            </span>
           </Link>
         ))}
         {rest.length > 0 && (
@@ -145,8 +152,8 @@ export function BottomNav() {
 
 export function SignInBar() {
   const path = usePathname();
-  const { person, openProfile } = useApp();
-  if (person || path === "/") return null;
+  const { person, openProfile, authLoading } = useApp();
+  if (authLoading || person || path === "/") return null;
   return (
     <div className="signin-bar">
       <div className="wrap">
@@ -415,8 +422,8 @@ export function ProfileDialog() {
 
 export function Footer() {
   const path = usePathname();
-  const { team, person } = useApp();
-  if (!person && path === "/") return null;
+  const { team, person, authLoading } = useApp();
+  if (authLoading || (!person && path === "/")) return null;
   return (
     <footer className="site-foot">
       <div className="wrap">

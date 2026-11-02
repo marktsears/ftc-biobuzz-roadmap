@@ -18,14 +18,14 @@ export const LADDERS: Ladder[] = [
     name: "Onshape from zero",
     track: "B",
     blurb: "From a free account to a part bolted on the robot.",
-    steps: ["cad-account", "cad-first-part", "cad-bracket", "cad-assembly", "cad-top-down", "cad-cube", "cad-pinpoint-pods", "cad-camera-mount", "cad-real-part"],
+    steps: ["cad-account", "cad-first-part", "cad-bracket", "cad-assembly", "cad-starterbot-import", "cad-top-down", "cad-cube", "cad-pinpoint-pods", "cad-camera-mount", "cad-real-part"],
   },
   {
     id: "code",
     name: "Code from zero",
     track: "S",
     blurb: "From your first variable to a change on the real robot.",
-    steps: ["code-java-warmup", "quiz-java", "code-first-opmode", "code-gamepad-motor", "code-git-pr", "code-mecanum-paper", "quiz-mecanum", "code-state-machine", "code-real-change"],
+    steps: ["code-java-warmup", "quiz-java", "code-first-opmode", "code-gamepad-motor", "code-git-pr", "code-mecanum-paper", "quiz-mecanum", "code-read-starterbot", "code-state-machine", "code-real-change"],
   },
   {
     id: "see",

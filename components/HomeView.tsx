@@ -4,16 +4,18 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "./AppProvider";
+import { CoachView } from "./CoachView";
 import { KIND_ICON } from "./QuestCard";
-import { LadderCard, StatusPill, laddersFor, statusOf } from "./QuestStatus";
+import { LadderCard, StatusPill, doneSet, statusOf } from "./QuestStatus";
 import { Task } from "./Task";
 import { Tracker } from "./Tracker";
 import { Cta, Icon, Shapes } from "./ui";
+import { LADDERS, type Ladder } from "@/lib/data/ladders";
 import { KIND_LABEL, questXp, type Quest } from "@/lib/data/quests";
 import { PACE_COPY, daysTo, pace } from "@/lib/progress";
 import { myTasks, openTasks } from "@/lib/pick";
 import { fmt, pd, plural } from "@/lib/time";
-import type { Assignment, Work } from "@/lib/types";
+import type { Assignment, Focus, Work } from "@/lib/types";
 import { MILESTONES, phaseOf, qualifier, wEnd, wStart } from "@/lib/weeks";
 import { diffDays } from "@/lib/time";
 
@@ -301,8 +303,15 @@ function MyQuests({ thisWeek, open, doneCount }: { thisWeek: Row[]; open: Row[];
   );
 }
 
+function laddersToShow(focus: Focus, done: Set<string>): Ladder[] {
+  const started = LADDERS.filter(l => l.steps.some(id => done.has(id)));
+  if (started.length) return started.slice(0, 2);
+  if (focus !== "all") return LADDERS.filter(l => l.track === focus).slice(0, 2);
+  return LADDERS.filter(l => l.id === "onshape" || l.id === "code");
+}
+
 export function HomeView() {
-  const { clock, person, flags, mine, questById, focus } = useApp();
+  const { clock, person, flags, mine, questById, focus, admin } = useApp();
   const shown = clock.before ? 1 : clock.now;
   const rows = useMemo(
     () =>
@@ -314,6 +323,7 @@ export function HomeView() {
         }),
     [mine, questById, shown],
   );
+  if (admin) return <CoachView />;
   if (!person) return <SignInGate week={shown} />;
 
   const thisWeek = rows.filter(r => r.a.week === shown);
@@ -338,24 +348,30 @@ export function HomeView() {
         {flags.season && <PaceLine />}
         <MyQuests thisWeek={thisWeek} open={open} doneCount={doneCount} />
 
-        <section aria-labelledby="own-h">
-          <div className="strip-head">
-            <div>
-              <h2 id="own-h" className="h-section">
-                Or pick your own
-              </h2>
-              <p className="muted">Each ladder starts from zero. Do the next step.</p>
+        {rows.some(r => r.w?.status !== "done") ? (
+          <p className="muted">
+            Want something else? <Link href="/quests">See all the quests and ladders</Link>
+          </p>
+        ) : (
+          <section aria-labelledby="own-h">
+            <div className="strip-head">
+              <div>
+                <h2 id="own-h" className="h-section">
+                  Start here
+                </h2>
+                <p className="muted">Each ladder starts from zero. Do the next step.</p>
+              </div>
+              <Link className="btn sm" href="/quests">
+                All quests →
+              </Link>
             </div>
-            <Link className="btn sm" href="/quests">
-              All quests →
-            </Link>
-          </div>
-          <div className="ladders">
-            {laddersFor(focus).map(l => (
-              <LadderCard key={l.id} l={l} />
-            ))}
-          </div>
-        </section>
+            <div className="ladders">
+              {laddersToShow(focus, doneSet(mine.work)).map(l => (
+                <LadderCard key={l.id} l={l} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {flags.teamTasks && <NextMoves />}
       </div>

@@ -5,7 +5,7 @@ It's a Next.js app, hosted on Vercel. Students sign in with their Trinity Google
 
 The goal is simple: every student who walks in knows one useful thing to do. The coach picks quests for each student, week by week. Students can also climb a ladder on their own.
 
-- **Home**: the quests your coach picked for you this week, anything still open, and the ladders (Onshape, code, hands-on, drive team, telling our story).
+- **Home**: the quests your coach picked for you this week, and anything still open. Ladders show when you don't already have quests to do.
 - **Quests**: every quest, with filters. Each one fits in one session and ends with something to show.
 - **Quest page**: steps, links, hints, and three buttons: _Start it_, _I'm stuck_ (with a one-line note), _I finished it_ (with a link or a sentence as proof).
 - **Coach** (coaches only): a "Needs you" list of stuck and finished work, the class roster with week-by-week assigning, quests you write yourself, and Labs.

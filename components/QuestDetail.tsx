@@ -1,34 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "./AppProvider";
 import { KIND_ICON, QuestCard } from "./QuestCard";
 import { StatusPill, doneSet, statusOf } from "./QuestStatus";
+import { RichText } from "./RichText";
 import { Avatar, Icon, Shapes } from "./ui";
-import { KIND_LABEL, LEVEL_LABEL, questXp, type Quest } from "@/lib/data/quests";
+import { QUIZ_CHECKER } from "@/lib/coach";
+import { KIND_LABEL, LEVEL_LABEL, questXp, type Quest, type Step } from "@/lib/data/quests";
+
+const stepText = (s: Step) => (typeof s === "string" ? s : s.t);
+const stepOk = (s: Step) => (typeof s === "string" ? undefined : s.ok);
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+};
 import { LADDER_OF } from "@/lib/data/ladders";
 import { TRACKS } from "@/lib/data/core";
 import { ago } from "@/lib/time";
 import { questCrew, rankQuests } from "@/lib/pick";
 
 export function QuestDetail({ q }: { q: Quest }) {
-  const { state, mine, focus, clock, flags, allQuests, questById } = useApp();
+  const { state, mine, focus, clock, flags, allQuests, questById, email, person, setWork, admin } = useApp();
   const done = useMemo(() => doneSet(mine.work), [mine.work]);
   const crew = questCrew(state, q.id);
+  const stepKey = `tr-steps:${email}:${q.id}`;
   const [steps, setSteps] = useState<boolean[]>(() => q.steps.map(() => false));
+  const markedDoing = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(stepKey) || "null") as unknown;
+      if (Array.isArray(raw) && raw.length === q.steps.length && raw.every(x => typeof x === "boolean")) setSteps(raw as boolean[]);
+    } catch {}
+  }, [stepKey, q.steps.length]);
   const rung = LADDER_OF[q.id];
   const assigned = mine.assignments.find(a => a.quest === q.id);
 
   const next = useMemo(() => {
     if (rung) {
-      const after = rung.ladder.steps.slice(rung.idx + 1).find(id => !done.has(id));
+      const after = admin ? rung.ladder.steps[rung.idx + 1] : rung.ladder.steps.slice(rung.idx + 1).find(id => !done.has(id));
       const nq = after && questById(after);
       if (nq) return [nq];
+      if (admin) return [];
     }
+    if (admin) return [];
     return rankQuests({ quests: allQuests.filter(x => x.id !== q.id), done, focus, week: clock.now, seed: "next" + q.id, maxMins: 45 }).slice(0, 2);
-  }, [rung, done, questById, allQuests, q.id, focus, clock.now]);
+  }, [rung, done, questById, allQuests, q.id, focus, clock.now, admin]);
   const stepsDone = steps.filter(Boolean).length;
+  const prereqs = (q.before ?? []).map(id => questById(id)).filter((x): x is Quest => !!x);
 
   return (
     <>
@@ -66,7 +89,7 @@ export function QuestDetail({ q }: { q: Quest }) {
 
       <div className="wrap qd-grid pull">
         <div className="qd-main">
-          {assigned && (
+          {assigned && !admin && (
             <section className="card assigned-note">
               <Icon name="flag" size={18} />
               <p>
@@ -78,32 +101,118 @@ export function QuestDetail({ q }: { q: Quest }) {
           {q.why && (
             <section className="card">
               <div className="label">Why it matters</div>
-              <p className="why-line">{q.why}</p>
+              <p className="why-line">
+                <RichText text={q.why} />
+              </p>
+            </section>
+          )}
+
+          {(prereqs.length > 0 || (q.needs && q.needs.length > 0) || q.careful) && (
+            <section className="card getready">
+              {prereqs.length > 0 && (
+                <div className="gr-block">
+                  <div className="label">{admin ? "They should do these first" : "Do these first"}</div>
+                  <ul className="prereq">
+                    {prereqs.map(p => (
+                      <li key={p.id}>
+                        <Link href={`/quests/${p.id}`} className={done.has(p.id) ? "on" : ""}>
+                          <Icon name={done.has(p.id) ? "check" : KIND_ICON[p.kind]} size={15} />
+                          <span>{p.title}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {q.needs && q.needs.length > 0 && (
+                <div className="gr-block">
+                  <div className="label">{admin ? "They’ll need" : "You’ll need"}</div>
+                  <ul className="plain gr-needs">
+                    {q.needs.map(n => (
+                      <li key={n}>
+                        <RichText text={n} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {q.careful && (
+                <p className="careful">
+                  <Icon name="flag" size={18} />
+                  <span>
+                    <b>Be careful.</b> <RichText text={q.careful} />
+                  </span>
+                </p>
+              )}
             </section>
           )}
 
           {!q.quiz && (
             <section className="card">
               <div className="strip-head">
-                <h2>Do this</h2>
-                <span className="mono">
-                  {stepsDone}/{q.steps.length}
-                </span>
+                <h2>{admin ? "What they do" : "Do this"}</h2>
+                {!admin && (
+                  <span className="mono">
+                    {stepsDone}/{q.steps.length}
+                  </span>
+                )}
               </div>
-              <ol className="steps">
-                {q.steps.map((s, i) => (
-                  <li key={i} className={steps[i] ? "on" : ""}>
-                    <label>
-                      <input type="checkbox" checked={steps[i]} onChange={e => setSteps(a => a.map((v, j) => (j === i ? e.target.checked : v)))} />
-                      <span className="box" aria-hidden="true">
-                        <Icon name="check" size={14} />
-                      </span>
-                      <span>{s}</span>
-                    </label>
-                  </li>
-                ))}
-              </ol>
-              <p className="muted small">These boxes are just for you while you work.</p>
+              {admin ? (
+                <ol className="steps preview">
+                  {q.steps.map((s, i) => {
+                    const ok = stepOk(s);
+                    return (
+                      <li key={i}>
+                        <RichText text={stepText(s)} />
+                        {ok && (
+                          <p className="step-ok">
+                            <b>It worked when</b> <RichText text={ok} />
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <ol className="steps">
+                  {q.steps.map((s, i) => {
+                    const ok = stepOk(s);
+                    return (
+                      <li key={i} className={steps[i] ? "on" : ""}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={steps[i]}
+                            onChange={e => {
+                              const next = steps.map((v, j) => (j === i ? e.target.checked : v));
+                              setSteps(next);
+                              try {
+                                localStorage.setItem(stepKey, JSON.stringify(next));
+                              } catch {}
+                              if (e.target.checked && !markedDoing.current && statusOf(mine.work[q.id]) === "none" && person) {
+                                markedDoing.current = true;
+                                void setWork(q.id, "doing");
+                              }
+                            }}
+                          />
+                          <span className="box" aria-hidden="true">
+                            <Icon name="check" size={14} />
+                          </span>
+                          <span>
+                            <RichText text={stepText(s)} />
+                          </span>
+                        </label>
+                        {ok && (
+                          <p className="step-ok">
+                            <b>You’ll know it worked when</b> <RichText text={ok} />
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+              {!admin && <p className="muted small">These boxes stay on this computer. They are just for you while you work.</p>}
             </section>
           )}
 
@@ -111,15 +220,17 @@ export function QuestDetail({ q }: { q: Quest }) {
             <section className="card">
               <h2>Learn from</h2>
               <ul className="res">
-                {q.resources.map(r => (
+                {q.resources.map((r, i) => (
                   <li key={r.url}>
                     <a href={r.url} target="_blank" rel="noopener noreferrer">
                       <span className="res-ico">
                         <Icon name={r.url.includes("youtube.com") ? "play" : "link"} size={18} />
                       </span>
                       <span>
+                        {i === 0 && q.resources.length > 1 && <em className="start-tag">Start here</em>}
                         <b>{r.label}</b>
                         {r.note && <small>{r.note}</small>}
+                        <small className="res-host">{hostOf(r.url)}</small>
                       </span>
                       <Icon name="arrow" size={16} />
                     </a>
@@ -129,12 +240,23 @@ export function QuestDetail({ q }: { q: Quest }) {
             </section>
           )}
 
+          {q.stretch && (
+            <section className="card stretch">
+              <div className="label">{admin ? "If they finish early" : "Finished early? Want more?"}</div>
+              <p>
+                <RichText text={q.stretch} />
+              </p>
+            </section>
+          )}
+
           {q.hints && q.hints.length > 0 && (
             <details className="card hints">
-              <summary>Open a hint</summary>
+              <summary>{admin ? "Hints they can open" : "Open a hint"}</summary>
               <ul className="plain">
                 {q.hints.map(h => (
-                  <li key={h}>{h}</li>
+                  <li key={h}>
+                    <RichText text={h} />
+                  </li>
                 ))}
               </ul>
             </details>
@@ -142,9 +264,22 @@ export function QuestDetail({ q }: { q: Quest }) {
         </div>
 
         <aside className="qd-side">
-          <section className="card claim">{q.quiz ? <Quiz q={q} /> : <WorkPanel q={q} />}</section>
+          {admin ? (
+            <>
+              <section className="card claim">
+                <CoachGlance q={q} />
+              </section>
+              {q.quiz && (
+                <section className="card claim">
+                  <Quiz q={q} preview />
+                </section>
+              )}
+            </>
+          ) : (
+            <section className="card claim">{q.quiz ? <Quiz q={q} /> : <WorkPanel q={q} />}</section>
+          )}
 
-          {crew.length > 0 && (
+          {!admin && crew.length > 0 && (
             <section className="card crew">
               <div className="label">Who’s done this</div>
               <ul>
@@ -171,13 +306,36 @@ export function QuestDetail({ q }: { q: Quest }) {
             </div>
             <div className="qgrid two">
               {next.map(x => (
-                <QuestCard key={x.id} q={x} done={done.has(x.id)} />
+                <QuestCard key={x.id} q={x} done={admin ? false : done.has(x.id)} />
               ))}
             </div>
           </section>
         </div>
       )}
     </>
+  );
+}
+
+/** What the coach is asking a student to show. Opening the quest does not assign it. */
+function CoachGlance({ q }: { q: Quest }) {
+  const need = q.quiz ? Math.ceil(q.quiz.length * 0.8) : 0;
+  return (
+    <div className="work">
+      <div className="label">What they have to show you</div>
+      <p className="show-it">
+        <RichText text={q.proof} />
+      </p>
+      {q.reflect && (
+        <p className="show-it reflect">
+          <b>Then they answer:</b> <RichText text={q.reflect} />
+        </p>
+      )}
+      {q.quiz && (
+        <p className="muted small">
+          It’s a quiz. They need {need} of {q.quiz.length}. A pass shows up on your class page. Trying the questions here doesn’t count.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -222,7 +380,7 @@ function WorkPanel({ q }: { q: Quest }) {
         <div className="doneblock">
           <Icon name="check" size={20} />
           <div>
-            <b>{s === "checked" ? `Checked by ${w!.checkedBy}` : "Done. Your coach will check it."}</b>
+            <b>{w?.checkedBy === QUIZ_CHECKER ? "Passed" : s === "checked" ? `Checked by ${w!.checkedBy}` : "Done. Your coach will check it."}</b>
             {w?.proof && <small>“{w.proof}”</small>}
           </div>
         </div>
@@ -231,20 +389,30 @@ function WorkPanel({ q }: { q: Quest }) {
       {mode === null && s !== "done" && s !== "checked" && (
         <>
           <p className="show-it">
-            <b>To finish:</b> {q.proof}
+            <b>To finish:</b> <RichText text={q.proof} />
           </p>
+          {q.reflect && (
+            <p className="show-it reflect">
+              <b>Then think:</b> <RichText text={q.reflect} />
+            </p>
+          )}
           <div className="work-actions">
-            <button type="button" className="cta solid block" disabled={busy} onClick={() => setMode("done")}>
-              <span>I finished it</span>
-              <i className="cta-dot" aria-hidden="true">
-                <Icon name="check" size={16} />
-              </i>
-            </button>
-            {s === "none" && (
-              <button type="button" className="btn" disabled={busy} onClick={() => save("doing")}>
-                Start it
+            {s === "none" ? (
+              <button type="button" className="cta solid block" disabled={busy} onClick={() => save("doing")}>
+                <span>Start it</span>
+                <i className="cta-dot" aria-hidden="true">
+                  <Icon name="arrow" size={16} />
+                </i>
               </button>
-            )}
+            ) : null}
+            <button type="button" className={s === "none" ? "btn" : "cta solid block"} disabled={busy} onClick={() => setMode("done")}>
+              <span>I finished it</span>
+              {s !== "none" && (
+                <i className="cta-dot" aria-hidden="true">
+                  <Icon name="check" size={16} />
+                </i>
+              )}
+            </button>
             <button type="button" className="btn stuck-btn" disabled={busy} onClick={() => setMode("stuck")}>
               I’m stuck
             </button>
@@ -261,7 +429,10 @@ function WorkPanel({ q }: { q: Quest }) {
           }}
         >
           <label className="field">
-            <span>Show what you made: paste a link (Onshape, GitHub, a photo) or write one sentence.</span>
+            <span>
+              Show what you made: paste a link (Onshape, GitHub, a photo) or write one sentence.
+              {q.reflect ? ` Then answer in a sentence: ${q.reflect}` : ""}
+            </span>
             <textarea value={text} onChange={e => setText(e.target.value)} maxLength={500} rows={3} placeholder="https://cad.onshape.com/… or: I learned that…" autoFocus />
           </label>
           <div className="work-actions row">
@@ -307,17 +478,33 @@ function WorkPanel({ q }: { q: Quest }) {
   );
 }
 
-function Quiz({ q }: { q: Quest }) {
+function mix(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function Quiz({ q, preview }: { q: Quest; preview?: boolean }) {
   const { person, openProfile, mine, setWork, flags } = useApp();
   const qs = q.quiz!;
   const [picks, setPicks] = useState<(number | null)[]>(() => qs.map(() => null));
   const [round, setRound] = useState(0);
+  const [justPassed, setJustPassed] = useState(false);
   const answered = picks.filter(p => p !== null).length;
   const score = picks.reduce<number>((n, p, i) => n + (p === qs[i].answer ? 1 : 0), 0);
   const need = Math.ceil(qs.length * 0.8);
   const finished = answered === qs.length;
   const passed = finished && score >= need;
   const already = mine.work[q.id]?.status === "done";
+  const order = useMemo(
+    () =>
+      qs.map((item, i) => {
+        const idx = item.options.map((_, a) => a);
+        if (round === 0) return idx;
+        return [...idx].sort((a, b) => mix(`${q.id}:${round}:${i}:${a}`) - mix(`${q.id}:${round}:${i}:${b}`));
+      }),
+    [qs, round, q.id],
+  );
 
   const choose = (i: number, a: number) => {
     if (picks[i] !== null) return;
@@ -325,7 +512,8 @@ function Quiz({ q }: { q: Quest }) {
     setPicks(next);
     const fin = next.every(p => p !== null);
     const sc = next.reduce<number>((n, p, k) => n + (p === qs[k].answer ? 1 : 0), 0);
-    if (fin && sc >= need && !already) {
+    if (fin && sc >= need && !already && !preview) {
+      setJustPassed(true);
       if (!person) openProfile();
       else void setWork(q.id, "done", `Quiz ${sc}/${qs.length}`);
     }
@@ -340,14 +528,15 @@ function Quiz({ q }: { q: Quest }) {
         </span>
       </div>
       <p className="muted small">
-        You need {need} of {qs.length} to pass. Retake as often as you like.
+        {preview ? "Nothing you click here is saved. A student’s pass shows up on your class page." : `You need ${need} of ${qs.length} to pass. Retake as often as you like.`}
       </p>
       {qs.map((item, i) => (
         <fieldset key={i} className="qq">
           <legend>
             {i + 1}. {item.q}
           </legend>
-          {item.options.map((o, a) => {
+          {order[i].map(a => {
+            const o = item.options[a];
             const picked = picks[i] === a;
             const reveal = picks[i] !== null;
             const cls = reveal ? (a === item.answer ? "right" : picked ? "wrong" : "") : "";
@@ -357,13 +546,26 @@ function Quiz({ q }: { q: Quest }) {
               </button>
             );
           })}
-          {picks[i] !== null && <p className={`why-a ${picks[i] === item.answer ? "ok" : "no"}`}>{picks[i] === item.answer ? "Right. " : "Not quite. "}{item.why}</p>}
+          {picks[i] !== null && (
+            <p className={`why-a ${picks[i] === item.answer ? "ok" : "no"}`}>
+              {picks[i] === item.answer ? "Right. " : "Not quite. "}
+              <RichText text={item.why} />
+              {item.more && (
+                <>
+                  {" "}
+                  <a href={item.more.url} target="_blank" rel="noopener noreferrer" className="rich-link">
+                    Read more: {item.more.label}
+                  </a>
+                </>
+              )}
+            </p>
+          )}
         </fieldset>
       ))}
       {finished && (
         <div className={`quiz-result ${passed ? "pass" : "retry"}`}>
           <b>{passed ? `You passed: ${score} of ${qs.length}` : `${score} of ${qs.length}. So close.`}</b>
-          <span>{passed ? (already ? "Already counted." : flags.xp ? `+${questXp(q)} XP` : "Your coach can see it.") : "Read the explanations and try again."}</span>
+          <span>{passed ? (preview ? "That’s a passing score. It isn’t saved." : already && !justPassed ? "Already counted." : flags.xp ? `+${questXp(q)} XP` : "Passed. Your coach can see it.") : "Read the explanations and try again."}</span>
           {!passed && (
             <button
               type="button"
